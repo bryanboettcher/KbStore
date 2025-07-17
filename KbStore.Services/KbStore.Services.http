@@ -1,0 +1,6 @@
+@KbStore.Services_HostAddress = http://localhost:5262
+
+GET {{KbStore.Services_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
