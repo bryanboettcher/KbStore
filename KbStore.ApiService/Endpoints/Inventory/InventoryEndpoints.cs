@@ -9,9 +9,9 @@ using System.Threading;
 public static class InventoryEndpoints
 {
     public static async Task<IResult> Create(
-        [FromBody] CreateInventoryPayload payload,
-        [FromServices] IRequestClient<CreateInventoryRequest> client,
-        CancellationToken cancellationToken = default)
+        CreateInventoryPayload payload,
+        IRequestClient<CreateInventoryRequest> client,
+        CancellationToken cancellationToken)
     {
         if (!payload.IsValid())
             return Results.BadRequest();
