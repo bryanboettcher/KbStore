@@ -16,7 +16,7 @@ public static class InventoryEndpoints
         if (!payload.IsValid())
             return Results.BadRequest();
 
-        Response response = await client.GetResponse<CreateInventoryResponse, CreateInventoryFailure>(new
+        Response response = await client.GetResponse<CreateInventoryResponse, InventoryFailure>(new
         {
             payload.PartNumber,
             payload.Description,
@@ -27,64 +27,90 @@ public static class InventoryEndpoints
         return response switch
         {
             (_, CreateInventoryResponse success) => Results.Ok(success),
-            (_, CreateInventoryFailure failure) => Results.Conflict(failure),
+            (_, InventoryFailure failure) => failure.AsResult(),
             _ => Results.InternalServerError("Unexpected response type from backend")
         };
     }
 
     public static async Task<IResult> UpdateQuantity(
-        [FromRoute] string partNumber,
+        [FromRoute] Guid id,
         [FromRoute] int quantity,
         [FromServices] IRequestClient<UpdateInventoryQuantityRequest> client,
         CancellationToken cancellationToken = default)
     {
-        Response response = await client.GetResponse<UpdateInventoryQuantityResponse, InventoryMissing>(new
+        if (quantity < 0)
+            return Results.BadRequest();
+
+        Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
         {
-            PartNumber = partNumber,
+            CorrelationId = id,
             StockQuantity = quantity
         }, cancellationToken);
 
         return response switch
         {
-            (_, UpdateInventoryQuantityResponse success) => Results.Ok(success),
-            (_, InventoryMissing failure) => Results.NotFound(failure),
+            (_, UpdateInventoryResponse success) => Results.Ok(success),
+            (_, InventoryFailure failure) => failure.AsResult(),
+            _ => Results.InternalServerError("Unexpected response type from backend")
+        };
+    }
+
+    public static async Task<IResult> UpdateDescription(
+        [FromRoute] Guid id,
+        [FromBody] string? description,
+        [FromServices] IRequestClient<UpdateInventoryDescriptionRequest> client,
+        CancellationToken cancellationToken = default)
+    {
+        if (description == null)
+            return Results.BadRequest();
+
+        Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
+        {
+            CorrelationId = id,
+            Description = description
+        }, cancellationToken);
+
+        return response switch
+        {
+            (_, UpdateInventoryResponse success) => Results.Ok(success),
+            (_, InventoryFailure failure) => failure.AsResult(),
             _ => Results.InternalServerError("Unexpected response type from backend")
         };
     }
 
     public static async Task<IResult> Delete(
-        [FromRoute] string partNumber,
+        [FromRoute] Guid id,
         [FromServices] IRequestClient<DeleteInventoryRequest> client,
         CancellationToken cancellationToken = default)
     {
-        Response response = await client.GetResponse<DeleteInventoryResponse, InventoryMissing>(new
+        Response response = await client.GetResponse<DeleteInventoryResponse, InventoryFailure>(new
         {
-            PartNumber = partNumber,
+            CorrelationId = id,
         }, cancellationToken);
 
         return response switch
         {
             (_, DeleteInventoryResponse success) => Results.Ok(success),
-            (_, InventoryMissing failure) => Results.NotFound(failure),
+            (_, InventoryFailure failure) => failure.AsResult(),
             _ => Results.InternalServerError("Unexpected response type from backend")
         };
     }
 
     public static async Task<IResult> GetById(
-        [FromRoute] string partNumber,
+        [FromRoute] Guid id,
         [FromServices] IRequestClient<InventoryStatusRequest> client,
         CancellationToken cancellationToken = default
     )
     {
-        Response response = await client.GetResponse<InventoryStatusResponse, InventoryMissing>(new
+        Response response = await client.GetResponse<InventoryStatusResponse, InventoryFailure>(new
         {
-            PartNumber = partNumber
+            CorrelationId = id,
         }, cancellationToken);
 
         return response switch
         {
             (_, InventoryStatusResponse success) => Results.Ok(success),
-            (_, InventoryMissing failure) => Results.NotFound(failure),
+            (_, InventoryFailure failure) => failure.AsResult(),
             _ => Results.InternalServerError("Unexpected response type from backend")
         };
     }
@@ -92,9 +118,10 @@ public static class InventoryEndpoints
     public static void MapTo(WebApplication app)
     {
         app.MapPost("/inventory", Create);
-        app.MapGet("/inventory/{partNumber}", GetById);
-        app.MapPatch("/inventory/{partNumber}/quantity/{quantity:int}", UpdateQuantity);
-        app.MapDelete("/inventory/{partNumber}", Delete);
+        app.MapGet("/inventory/{id:guid}", GetById);
+        app.MapPatch("/inventory/{id:guid}/quantity/{quantity:int}", UpdateQuantity);
+        app.MapPatch("/inventory/{id:guid}/description", UpdateDescription);
+        app.MapDelete("/inventory/{id:guid}", Delete);
     }
 }
 
@@ -106,5 +133,5 @@ public class CreateInventoryPayload
     public InventoryStatus InventoryStatus { get; set; }
 
     public bool IsValid() 
-        => !string.IsNullOrEmpty(PartNumber) && StockQuantity >= 0;
+        => !string.IsNullOrWhiteSpace(PartNumber) && StockQuantity >= 0;
 }

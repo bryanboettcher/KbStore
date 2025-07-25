@@ -24,41 +24,41 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventorySag
                 .Then(SetProperties)
                 .TransitionTo(Available)
                 .RespondAsync(Message<CreateInventoryResponse>)
-                .PublishAsync(Message<InventoryCreatedEvent>)
+                .PublishAsync(Message<InventoryCreated>)
         );
 
         During(Available,
             When(QuantityUpdated)
                 .Then(c => c.Saga.StockQuantity = c.Message.StockQuantity)
-                .RespondAsync(Message<UpdateInventoryQuantityResponse>)
-                .PublishAsync(Message<InventoryQuantityUpdatedEvent>)
+                .RespondAsync(Message<UpdateInventoryResponse>)
+                .PublishAsync(Message<InventoryQuantityUpdated>)
         );
 
         During(Available,
             When(Held)
                 .TransitionTo(OnHold)
                 .RespondAsync(Message<HoldInventoryResponse>)
-                .PublishAsync(Message<InventoryHeldEvent>)
+                .PublishAsync(Message<InventoryHeld>)
         );
 
         During(OnHold,
             When(Released)
                 .TransitionTo(Available)
                 .RespondAsync(Message<ReleaseInventoryResponse>)
-                .PublishAsync(Message<InventoryReleasedEvent>)
+                .PublishAsync(Message<InventoryReleased>)
         );
 
         During(Available,
             When(Deleted)
                 .TransitionTo(Discontinued)
                 .RespondAsync(Message<DeleteInventoryResponse>)
-                .PublishAsync(Message<InventoryDiscontinuedEvent>)
+                .PublishAsync(Message<InventoryDiscontinued>)
         );
 
         During(Discontinued,
             When(Deleted)
                 .RespondAsync(Message<DeleteInventoryResponse>)
-                .PublishAsync(Message<InventoryDeletedEvent>)
+                .PublishAsync(Message<InventoryDeleted>)
                 .Finalize()
         );
     }

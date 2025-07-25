@@ -1,154 +1,47 @@
-﻿using System.Linq.Expressions;
-using System.Reflection;
-using MassTransit;
-using MassTransit.Testing;
+﻿using MassTransit;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
 using NUnit.Framework;
-// ReSharper disable InconsistentNaming
-// ReSharper disable MemberCanBePrivate.Global
+
+// ReSharper disable StaticMemberInGenericType
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace KbStore.ApiService.Tests.Api.Endpoints;
 
-#pragma warning disable CS8618
-public abstract class Endpoint_Tests
+public abstract class Endpoint_Tests<TRequest> : TestBase
+    where TRequest : class
 {
-    protected IServiceCollection Services;
-    protected IServiceProvider? RootProvider;
-    protected IServiceScope ScopedProvider;
-    
-    protected ITestHarness? Harness;
+    protected IResult? Output;
+    protected Func<ConsumeContext<TRequest>, Task> ConsumeHandler;
 
     protected Endpoint_Tests()
+        => ConsumeHandler = HandlerUnassigned;
+
+    protected override void OnHarnessCreating(IBusRegistrationConfigurator conf)
     {
-        Services = new ServiceCollection();
+        conf.AddHandler<TRequest>(async ctx => await ConsumeHandler(ctx));
     }
 
-    [OneTimeSetUp]
-    public async Task InitializeOnce()
+    protected Task HandlerUnassigned(ConsumeContext<TRequest> context)
     {
-        OnServicesCreating(Services);
-
-        Services.AddMassTransitTestHarness(conf =>
-        {
-            OnHarnessCreating(conf);
-        });
-
-        RootProvider = Services.BuildServiceProvider(true);
+        Assert.Fail($"Consumer must be defined for {typeof(TRequest)}.  Use RespondWith<T>(T message) or ResponseUnexpected()");
+        return Task.CompletedTask;
     }
 
-    [SetUp]
-    public async Task Setup()
+    protected Task CallInvalidHandler(ConsumeContext<TRequest> context)
     {
-        await OnPreSetup();
-
-        Mocks.Clear();
-
-        Harness = RootProvider!.GetRequiredService<ITestHarness>();
-        ScopedProvider = RootProvider!.CreateScope();
-
-        await Harness.Start();
-        await OnPostSetup();
-    }
-    
-    [TearDown]
-    public async Task Teardown()
-    {
-        await OnPreTeardown();
-
-        if (Harness is not null)
-            await Harness.Stop();
-
-        await OnPostTeardown();
-
-        ScopedProvider.Dispose();
+        Assert.Fail("Message should not have been published");
+        return Task.CompletedTask;
     }
 
-    [OneTimeTearDown]
-    public async Task FinalizeOnce()
+    protected void RespondWith<TMessage>(object message)
+        where TMessage : class
     {
-        if (Harness is IAsyncDisposable dispose)
-            await dispose.DisposeAsync();
-
-        (RootProvider as IDisposable)?.Dispose();
+        ConsumeHandler = async ctx => await ctx.RespondAsync<TMessage>(message);
     }
 
-    protected virtual void OnServicesCreating(IServiceCollection services) { }
-    protected virtual void OnHarnessCreating(IBusRegistrationConfigurator conf) { }
-
-    protected virtual Task OnPreSetup() => Task.CompletedTask;
-    protected virtual Task OnPostSetup() => Task.CompletedTask;
-    protected virtual Task OnPreTeardown() => Task.CompletedTask;
-    protected virtual Task OnPostTeardown() => Task.CompletedTask;
-
-    protected List<object> Mocks = new();
-
-    protected TService MockOf<TService>()
-        where TService : class
+    protected void ResponseUnexpected()
     {
-        var instance = Substitute.For<TService>();
-
-        Mocks.Add(instance);
-
-        return instance;
-    }
-
-    protected TService? Resolve<TService>()
-        where TService : class
-    {
-        return (TService?) Resolve(typeof(TService));
-    }
-
-    protected object? Resolve(Type service)
-    {
-        var mock = Mocks.FirstOrDefault(m => m.GetType() == service);
-
-        return mock ?? ScopedProvider.ServiceProvider.GetService(service);
-    }
-
-    protected IResult? Execute(Delegate handler, params object?[] inputs)
-    {
-        var methodInfo = handler.Method;
-        var parameters = methodInfo.GetParameters();
-        var args = new object?[parameters.Length];
-
-        var provided = new List<object?>(inputs);
-
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            var paramType = parameters[i].ParameterType;
-
-            args[i] = ResolveParameter(paramType);
-        }
-
-        try
-        {
-            var result = handler.DynamicInvoke(args);
-
-            return result is Task<IResult> taskResult
-                ? taskResult.GetAwaiter().GetResult()
-                : result as IResult;
-        }
-        catch (TargetParameterCountException)
-        {
-            throw new InvalidOperationException($"Could not resolve all parameters for method {methodInfo.Name}");
-        }
-
-        object? ResolveParameter(Type paramType)
-        {
-            var providedIndex = provided.FindIndex(o => o.GetType() == paramType);
-            if (providedIndex != -1)
-            {
-                var item = provided[providedIndex];
-                provided.RemoveAt(providedIndex);
-                return item;
-            }
-
-            if (paramType == typeof(CancellationToken))
-                return CancellationToken.None;
-
-            return Resolve(paramType);
-        }
+        ConsumeHandler = CallInvalidHandler;
     }
 }
