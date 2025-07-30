@@ -1,4 +1,9 @@
-﻿using System;
+﻿
+// ReSharper disable InconsistentNaming
+// ReSharper disable MemberCanBePrivate.Global
+
+namespace KbStore.ApiService.Tests.Api;
+
 using System.Reflection;
 using MassTransit;
 using MassTransit.Testing;
@@ -6,10 +11,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using NUnit.Framework;
-// ReSharper disable InconsistentNaming
-// ReSharper disable MemberCanBePrivate.Global
-
-namespace KbStore.ApiService.Tests.Api;
 
 #pragma warning disable CS8618
 public abstract class TestBase

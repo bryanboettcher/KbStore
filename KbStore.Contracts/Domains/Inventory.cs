@@ -3,80 +3,71 @@
 using MassTransit;
 
 #region Base items
-public enum InventoryStatus
-{
-    OnDemand,
-    InStock,
-    Backordered,
-    Discontinued
-}
 
 [ExcludeFromConfigureEndpoints, ExcludeFromTopology, ExcludeFromImplementedTypes]
-public interface InventoryModel
+public interface StockItemModel
 {
     Guid CorrelationId { get; }
     string PartNumber { get; }
     string Description { get; }
     int StockQuantity { get; }
-    InventoryStatus InventoryStatus { get; }
 }
 
 [ExcludeFromConfigureEndpoints, ExcludeFromTopology, ExcludeFromImplementedTypes]
-public interface BaseInventoryEvent : InventoryModel;
+public interface BaseStockItemEvent : StockItemModel;
 
 [ExcludeFromConfigureEndpoints, ExcludeFromTopology, ExcludeFromImplementedTypes]
-public interface InventoryFailure : RequestFailureBase;
+public interface StockItemFailure : RequestFailureBase;
 
 #endregion
 
-#region Creating inventory
-public interface CreateInventoryRequest : CorrelatedBy<Guid>
+#region Creating stock items
+public interface CreateStockItemRequest : CorrelatedBy<Guid>
 {
     string PartNumber { get; }
     string Description { get; }
     int StockQuantity { get; }
-    InventoryStatus InventoryStatus { get; }
 }
-public interface CreateInventoryResponse : BaseInventoryEvent;
-public interface InventoryCreated : BaseInventoryEvent;
+public interface CreateStockItemResponse : BaseStockItemEvent;
+public interface StockItemCreated : BaseStockItemEvent;
 #endregion
 
 // most events are a variant of "thing was modified", so we use this as a common base
-public interface InventoryUpdated : BaseInventoryEvent;
+public interface StockItemUpdated : BaseStockItemEvent;
 
 
-#region Updating inventory
-public interface UpdateInventoryQuantityRequest : CorrelatedBy<Guid>
+#region Updating stock items
+public interface UpdateStockItemQuantityRequest : CorrelatedBy<Guid>
 {
     int StockQuantity { get; }
 }
-public interface UpdateInventoryDescriptionRequest : CorrelatedBy<Guid>
+public interface UpdateStockItemDescriptionRequest : CorrelatedBy<Guid>
 {
     string Description { get; }
 }
-public interface UpdateInventoryResponse : BaseInventoryEvent;
-public interface InventoryQuantityUpdated : InventoryUpdated;
-public interface InventoryDescriptionUpdated : InventoryUpdated;
+public interface UpdateStockItemResponse : BaseStockItemEvent;
+public interface StockItemQuantityUpdated : StockItemUpdated;
+public interface StockItemDescriptionUpdated : StockItemUpdated;
 #endregion
 
 #region Actions
-public interface HoldInventoryRequest : CorrelatedBy<Guid>;
-public interface HoldInventoryResponse : BaseInventoryEvent;
-public interface InventoryHeld : InventoryUpdated;
+public interface HoldStockItemRequest : CorrelatedBy<Guid>;
+public interface HoldStockItemResponse : BaseStockItemEvent;
+public interface StockItemHeld : StockItemUpdated;
 
-public interface ReleaseInventoryRequest : CorrelatedBy<Guid>;
-public interface ReleaseInventoryResponse : BaseInventoryEvent;
-public interface InventoryReleased : InventoryUpdated;
+public interface ReleaseStockItemRequest : CorrelatedBy<Guid>;
+public interface ReleaseStockItemResponse : BaseStockItemEvent;
+public interface StockItemReleased : StockItemUpdated;
 #endregion
 
-#region Deleting inventory
-public interface DeleteInventoryRequest : CorrelatedBy<Guid>;
-public interface DeleteInventoryResponse : BaseInventoryEvent;
-public interface InventoryDiscontinued : InventoryUpdated;
-public interface InventoryDeleted : BaseInventoryEvent;
+#region Deleting stock items
+public interface DeleteStockItemRequest : CorrelatedBy<Guid>;
+public interface DeleteStockItemResponse : BaseStockItemEvent;
+public interface StockItemDiscontinued : StockItemUpdated;
+public interface StockItemDeleted : BaseStockItemEvent;
 #endregion
 
 #region Validation
-public interface InventoryStatusRequest : CorrelatedBy<Guid>;
-public interface InventoryStatusResponse : BaseInventoryEvent;
+public interface StockItemStatusRequest : CorrelatedBy<Guid>;
+public interface StockItemStatusResponse : BaseStockItemEvent;
 #endregion

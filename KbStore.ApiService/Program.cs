@@ -1,4 +1,7 @@
-using KbStore.ApiService.Endpoints;
+namespace KbStore.ApiService;
+
+using Endpoints;
+using ServiceDefaults;
 
 
 public class Program

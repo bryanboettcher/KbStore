@@ -1,27 +1,57 @@
-var builder = DistributedApplication.CreateBuilder(args);
+using Projects;
 
-var pgsql = builder.AddPostgres("pgsql")
-    .WithDataVolume()
-    .WithLifetime(ContainerLifetime.Persistent)
-    .WithPgWeb(conf => conf.WithHostPort(5050));
+namespace KbStore.AppHost;
 
-var pgdb = pgsql
-    .AddDatabase("db");
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        var builder = DistributedApplication.CreateBuilder(args);
 
-var broker = builder.AddRabbitMQ("queue")
-    .WithDataVolume()
-    .WithLifetime(ContainerLifetime.Persistent)
-    .WithManagementPlugin();
+        var broker = builder.AddRabbitMQ("queue")
+            .WithDataVolume()
+            .WithLifetime(ContainerLifetime.Persistent)
+            .WithManagementPlugin();
 
-var backend = builder.AddProject<Projects.KbStore_Services>("backend")
-    .WithReference(pgdb)
-    .WithReference(broker);
+        EnlistInventory(builder, broker);
+        EnlistStorefront(builder, broker);
 
-var webApi = builder.AddProject<Projects.KbStore_ApiService>("api")
-    .WithExternalHttpEndpoints()
-    .WithReference(broker)
-    .WaitFor(backend);
+        var webApi = builder.AddProject<KbStore_ApiService>("api")
+            .WithExternalHttpEndpoints()
+            .WithReference(broker).WithParentRelationship(broker);
 
-var app = builder.Build();
+        var app = builder.Build();
+
+        await app.RunAsync();
+    }
     
-app.Run();
+    private static void EnlistInventory(IDistributedApplicationBuilder builder, IResourceBuilder<RabbitMQServerResource> broker)
+    {
+        var pgsql = builder.AddPostgres("pgsql")
+            .WithDataVolume()
+            .WithLifetime(ContainerLifetime.Persistent)
+            .WithPgWeb(conf => conf.WithHostPort(5050));
+
+        var database = pgsql
+            .AddDatabase("inventory");
+
+        builder.AddProject<KbStore_Inventory>("domain-inventory")
+            .WithReference(broker).WithParentRelationship(broker)
+            .WithReference(database).WithParentRelationship(database);
+    }
+
+    private static void EnlistStorefront(IDistributedApplicationBuilder builder, IResourceBuilder<RabbitMQServerResource> broker)
+    {
+        var mongo = builder.AddMongoDB("mongo")
+                .WithDataVolume()
+                .WithLifetime(ContainerLifetime.Persistent)
+                .WithMongoExpress();
+
+        var database = mongo
+            .AddDatabase("storefront");
+
+        builder.AddProject<KbStore_Storefront>("domain-storefront")
+            .WithReference(broker).WithParentRelationship(broker)
+            .WithReference(database).WithParentRelationship(database);
+    }
+}

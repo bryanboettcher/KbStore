@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Domains\StockItems\Activities\**" />
+    <Content Remove="Domains\StockItems\Activities\**" />
+    <EmbeddedResource Remove="Domains\StockItems\Activities\**" />
+    <None Remove="Domains\StockItems\Activities\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.3.1" />
     <PackageReference Include="MassTransit" Version="8.5.1" />
     <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.5.1" />
@@ -28,7 +35,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Domains\Inventory\Activities\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
 

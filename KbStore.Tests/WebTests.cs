@@ -1,12 +1,15 @@
 namespace KbStore.Tests;
 
+using Projects;
+
+
 public class WebTests
 {
     [Test]
     public async Task GetWebResourceRootReturnsOkStatusCode()
     {
         // Arrange
-        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.KbStore_AppHost>();
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<KbStore_AppHost>();
         appHost.Services.ConfigureHttpClientDefaults(clientBuilder =>
         {
             clientBuilder.AddStandardResilienceHandler();

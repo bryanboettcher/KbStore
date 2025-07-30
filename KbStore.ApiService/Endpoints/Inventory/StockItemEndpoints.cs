@@ -3,31 +3,29 @@
 using Contracts.Domains;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading;
 
 
-public static class InventoryEndpoints
+public static class StockItemEndpoints
 {
     public static async Task<IResult> Create(
-        CreateInventoryPayload payload,
-        IRequestClient<CreateInventoryRequest> client,
+        CreateStockItemPayload payload,
+        IRequestClient<CreateStockItemRequest> client,
         CancellationToken cancellationToken)
     {
         if (!payload.IsValid())
             return Results.BadRequest();
 
-        Response response = await client.GetResponse<CreateInventoryResponse, InventoryFailure>(new
+        Response response = await client.GetResponse<CreateStockItemResponse, StockItemFailure>(new
         {
             payload.PartNumber,
             payload.Description,
             payload.StockQuantity,
-            payload.InventoryStatus
         }, cancellationToken);
 
         return response switch
         {
-            (_, CreateInventoryResponse success) => Results.Ok(success),
-            (_, InventoryFailure failure) => failure.AsResult(),
+            (_, CreateStockItemResponse success) => Results.Ok(success),
+            (_, StockItemFailure failure) => failure.AsResult(),
             _ => Results.InternalServerError("Unexpected response type from backend")
         };
     }
@@ -35,13 +33,13 @@ public static class InventoryEndpoints
     public static async Task<IResult> UpdateQuantity(
         [FromRoute] Guid id,
         [FromRoute] int quantity,
-        [FromServices] IRequestClient<UpdateInventoryQuantityRequest> client,
+        [FromServices] IRequestClient<UpdateStockItemQuantityRequest> client,
         CancellationToken cancellationToken = default)
     {
         if (quantity < 0)
             return Results.BadRequest();
 
-        Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
+        Response response = await client.GetResponse<UpdateStockItemResponse, StockItemFailure>(new
         {
             CorrelationId = id,
             StockQuantity = quantity
@@ -49,8 +47,8 @@ public static class InventoryEndpoints
 
         return response switch
         {
-            (_, UpdateInventoryResponse success) => Results.Ok(success),
-            (_, InventoryFailure failure) => failure.AsResult(),
+            (_, UpdateStockItemResponse success) => Results.Ok(success),
+            (_, StockItemFailure failure) => failure.AsResult(),
             _ => Results.InternalServerError("Unexpected response type from backend")
         };
     }
@@ -58,13 +56,13 @@ public static class InventoryEndpoints
     public static async Task<IResult> UpdateDescription(
         [FromRoute] Guid id,
         [FromBody] string? description,
-        [FromServices] IRequestClient<UpdateInventoryDescriptionRequest> client,
+        [FromServices] IRequestClient<UpdateStockItemDescriptionRequest> client,
         CancellationToken cancellationToken = default)
     {
         if (description == null)
             return Results.BadRequest();
 
-        Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
+        Response response = await client.GetResponse<UpdateStockItemResponse, StockItemFailure>(new
         {
             CorrelationId = id,
             Description = description
@@ -72,66 +70,64 @@ public static class InventoryEndpoints
 
         return response switch
         {
-            (_, UpdateInventoryResponse success) => Results.Ok(success),
-            (_, InventoryFailure failure) => failure.AsResult(),
+            (_, UpdateStockItemResponse success) => Results.Ok(success),
+            (_, StockItemFailure failure) => failure.AsResult(),
             _ => Results.InternalServerError("Unexpected response type from backend")
         };
     }
 
     public static async Task<IResult> Delete(
         [FromRoute] Guid id,
-        [FromServices] IRequestClient<DeleteInventoryRequest> client,
+        [FromServices] IRequestClient<DeleteStockItemRequest> client,
         CancellationToken cancellationToken = default)
     {
-        Response response = await client.GetResponse<DeleteInventoryResponse, InventoryFailure>(new
+        Response response = await client.GetResponse<DeleteStockItemResponse, StockItemFailure>(new
         {
             CorrelationId = id,
         }, cancellationToken);
 
         return response switch
         {
-            (_, DeleteInventoryResponse success) => Results.Ok(success),
-            (_, InventoryFailure failure) => failure.AsResult(),
+            (_, DeleteStockItemResponse success) => Results.Ok(success),
+            (_, StockItemFailure failure) => failure.AsResult(),
             _ => Results.InternalServerError("Unexpected response type from backend")
         };
     }
 
     public static async Task<IResult> GetById(
         [FromRoute] Guid id,
-        [FromServices] IRequestClient<InventoryStatusRequest> client,
+        [FromServices] IRequestClient<StockItemStatusRequest> client,
         CancellationToken cancellationToken = default
     )
     {
-        Response response = await client.GetResponse<InventoryStatusResponse, InventoryFailure>(new
+        Response response = await client.GetResponse<StockItemStatusResponse, StockItemFailure>(new
         {
             CorrelationId = id,
         }, cancellationToken);
 
         return response switch
         {
-            (_, InventoryStatusResponse success) => Results.Ok(success),
-            (_, InventoryFailure failure) => failure.AsResult(),
+            (_, StockItemStatusResponse success) => Results.Ok(success),
+            (_, StockItemFailure failure) => failure.AsResult(),
             _ => Results.InternalServerError("Unexpected response type from backend")
         };
     }
 
     public static void MapTo(WebApplication app)
     {
-        app.MapPost("/inventory", Create);
-        app.MapGet("/inventory/{id:guid}", GetById);
-        app.MapPatch("/inventory/{id:guid}/quantity/{quantity:int}", UpdateQuantity);
-        app.MapPatch("/inventory/{id:guid}/description", UpdateDescription);
-        app.MapDelete("/inventory/{id:guid}", Delete);
+        app.MapPost("/StockItem", Create);
+        app.MapGet("/StockItem/{id:guid}", GetById);
+        app.MapPatch("/StockItem/{id:guid}/quantity/{quantity:int}", UpdateQuantity);
+        app.MapPatch("/StockItem/{id:guid}/description", UpdateDescription);
+        app.MapDelete("/StockItem/{id:guid}", Delete);
     }
 }
 
-public class CreateInventoryPayload
+public class CreateStockItemPayload
 {
     public string? PartNumber { get; set; }
     public string? Description { get; set; }
     public int StockQuantity { get; set; }
-    public InventoryStatus InventoryStatus { get; set; }
-
     public bool IsValid() 
         => !string.IsNullOrWhiteSpace(PartNumber) && StockQuantity >= 0;
 }

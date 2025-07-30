@@ -7,6 +7,6 @@ public static class WebApplicationExtensions
 {
     public static void MapApplicationEndpoints(this WebApplication app)
     {
-        InventoryEndpoints.MapTo(app);
+        StockItemEndpoints.MapTo(app);
     }
 }

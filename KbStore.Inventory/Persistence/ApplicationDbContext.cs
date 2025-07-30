@@ -1,9 +1,10 @@
-﻿namespace KbStore.Services.Persistence;
+﻿namespace KbStore.Inventory.Persistence;
 
-using Domains.Inventory;
 using Domains.Products;
+using Domains.StockItems;
 using MassTransit.EntityFrameworkCoreIntegration;
 using Microsoft.EntityFrameworkCore;
+
 
 public class ApplicationDbContext : SagaDbContext
 {
@@ -12,8 +13,8 @@ public class ApplicationDbContext : SagaDbContext
     {
     }
 
-    public DbSet<InventorySaga> Inventory { get; set; }
-    public DbSet<ProductSaga> Products { get; set; }
+    public DbSet<StockItemEntity> Inventory { get; set; }
+    public DbSet<ProductEntity> Products { get; set; }
 
     protected override IEnumerable<ISagaClassMap> Configurations => 
     [

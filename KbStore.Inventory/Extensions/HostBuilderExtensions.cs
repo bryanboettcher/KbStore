@@ -1,6 +1,6 @@
-﻿namespace KbStore.Services.Extensions;
+﻿namespace KbStore.Inventory.Extensions;
 
-using Domains.Inventory;
+using Domains.StockItems;
 using MassTransit;
 using Persistence;
 
@@ -11,7 +11,7 @@ public static class HostBuilderExtensions
     {
         builder.Services.AddMassTransit(bus =>
         {
-            bus.AddSagaStateMachine<InventoryStateMachine, InventorySaga>()
+            bus.AddSagaStateMachine<StockItemStateMachine, StockItemEntity>()
                 .EntityFrameworkRepository(repo =>
                 {
                     repo.ConcurrencyMode = ConcurrencyMode.Optimistic;

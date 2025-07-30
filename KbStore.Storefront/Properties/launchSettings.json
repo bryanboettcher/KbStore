@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "KbStore.Storefront": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

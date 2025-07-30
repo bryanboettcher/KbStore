@@ -1,26 +1,25 @@
 ﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Inventory.Actions;
 
-using KbStore.ApiService.Endpoints.Inventory;
-using KbStore.ApiService.Tests.Api.Endpoints;
-using KbStore.Contracts.Domains;
+using ApiService.Endpoints.Inventory;
+using Contracts.Domains;
 using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
 using NUnit.Framework;
 using Shouldly;
 
 
-public abstract class UpdateInventoryDescription_Tests : Endpoint_Tests<UpdateInventoryDescriptionRequest>
+public abstract class UpdateStockItemDescription_Tests : Endpoint_Tests<UpdateStockItemDescriptionRequest>
 {
     protected static readonly Guid TestId = Guid.NewGuid();
     protected static readonly string ValidDescription = "Updated description";
 
-    public class When_updating_successfully : UpdateInventoryDescription_Tests
+    public class When_updating_successfully : UpdateStockItemDescription_Tests
     {
         protected override void Arrange()
-            => RespondWith<UpdateInventoryResponse>(new { });
+            => RespondWith<UpdateStockItemResponse>(new { });
 
         protected override async Task Act()
-            => Output = await Execute(InventoryEndpoints.UpdateDescription, TestId, ValidDescription);
+            => Output = await Execute(StockItemEndpoints.UpdateDescription, TestId, ValidDescription);
 
         [Test]
         public void It_should_return_something() => Output.ShouldNotBeNull();
@@ -29,16 +28,16 @@ public abstract class UpdateInventoryDescription_Tests : Endpoint_Tests<UpdateIn
         public void It_should_not_throw() => LastException.ShouldBeNull();
 
         [Test]
-        public void It_should_be_successful() => Output.ShouldBeOfType<Ok<UpdateInventoryResponse>>();
+        public void It_should_be_successful() => Output.ShouldBeOfType<Ok<UpdateStockItemResponse>>();
     }
 
-    public class When_description_is_null : UpdateInventoryDescription_Tests
+    public class When_description_is_null : UpdateStockItemDescription_Tests
     {
         protected override void Arrange()
             => ResponseUnexpected();
 
         protected override async Task Act()
-            => Output = await Execute(InventoryEndpoints.UpdateDescription, TestId, null);
+            => Output = await Execute(StockItemEndpoints.UpdateDescription, TestId, null);
 
         [Test]
         public void It_should_return_bad_request() => Output.ShouldBeOfType<BadRequest>();
@@ -47,41 +46,41 @@ public abstract class UpdateInventoryDescription_Tests : Endpoint_Tests<UpdateIn
         public void It_should_not_throw() => LastException.ShouldBeNull();
     }
 
-    public class When_description_is_empty : UpdateInventoryDescription_Tests
+    public class When_description_is_empty : UpdateStockItemDescription_Tests
     {
         protected override void Arrange()
-            => RespondWith<UpdateInventoryResponse>(new { });
+            => RespondWith<UpdateStockItemResponse>(new { });
 
         protected override async Task Act()
-            => Output = await Execute(InventoryEndpoints.UpdateDescription, TestId, "");
+            => Output = await Execute(StockItemEndpoints.UpdateDescription, TestId, "");
 
         [Test]
-        public void It_should_be_successful() => Output.ShouldBeOfType<Ok<UpdateInventoryResponse>>();
+        public void It_should_be_successful() => Output.ShouldBeOfType<Ok<UpdateStockItemResponse>>();
 
         [Test]
         public void It_should_not_throw() => LastException.ShouldBeNull();
     }
 
-    public class When_inventory_is_missing : UpdateInventoryDescription_Tests
+    public class When_StockItem_is_missing : UpdateStockItemDescription_Tests
     {
         protected override void Arrange() =>
-            RespondWith<InventoryFailure>(new
+            RespondWith<StockItemFailure>(new
             {
-                Message = "Inventory not found",
+                Message = "StockItem not found",
                 FailureType = FailureType.Missing
             });
 
         protected override async Task Act()
-            => Output = await Execute(InventoryEndpoints.UpdateDescription, TestId, ValidDescription);
+            => Output = await Execute(StockItemEndpoints.UpdateDescription, TestId, ValidDescription);
 
         [Test]
-        public void It_should_return_not_found() => Output.ShouldBeOfType<NotFound<InventoryFailure>>();
+        public void It_should_return_not_found() => Output.ShouldBeOfType<NotFound<StockItemFailure>>();
 
         [Test]
         public void It_should_not_throw() => LastException.ShouldBeNull();
     }
 
-    public class When_backend_returns_unexpected_response : UpdateInventoryDescription_Tests
+    public class When_backend_returns_unexpected_response : UpdateStockItemDescription_Tests
     {
         public class UnexpectedResponse { }
 
@@ -89,7 +88,7 @@ public abstract class UpdateInventoryDescription_Tests : Endpoint_Tests<UpdateIn
             => RespondWith<UnexpectedResponse>(new { });
 
         protected override async Task Act()
-            => Output = await Execute(InventoryEndpoints.UpdateDescription, TestId, ValidDescription);
+            => Output = await Execute(StockItemEndpoints.UpdateDescription, TestId, ValidDescription);
 
         [Test]
         public void It_should_throw_request_timeout_exception() => LastException.ShouldBeOfType<RequestTimeoutException>();
