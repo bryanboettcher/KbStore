@@ -1,15 +1,17 @@
 ﻿namespace KbStore.ApiService.Endpoints.Inventory;
 
-using Contracts.Domains;
+using Abstractions;
+using KbStore.Inventory.Abstractions.Contracts;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
+using Services;
 
 
 public static class StockItemEndpoints
 {
     public static async Task<IResult> Create(
-        CreateStockItemPayload payload,
-        IRequestClient<CreateStockItemRequest> client,
+        [FromBody] CreateStockItemPayload payload,
+        [FromServices] IRequestClient<CreateStockItemRequest> client,
         CancellationToken cancellationToken)
     {
         if (!payload.IsValid())
@@ -113,13 +115,23 @@ public static class StockItemEndpoints
         };
     }
 
+    public static async Task<IResult> GetAll(
+        [AsParameters] PaginatedRequest pagination,
+        [FromServices] IStockItemSearch search,
+        CancellationToken cancellationToken = default)
+    {
+        // TODO: Implement
+        throw new NotImplementedException();
+    }
+
     public static void MapTo(WebApplication app)
     {
-        app.MapPost("/StockItem", Create);
-        app.MapGet("/StockItem/{id:guid}", GetById);
-        app.MapPatch("/StockItem/{id:guid}/quantity/{quantity:int}", UpdateQuantity);
-        app.MapPatch("/StockItem/{id:guid}/description", UpdateDescription);
-        app.MapDelete("/StockItem/{id:guid}", Delete);
+        var group = app.MapGroup("/stock-items");
+        group.MapPost("", Create);
+        group.MapGet("{id:guid}", GetById);
+        group.MapPatch("{id:guid}/quantity/{quantity:int}", UpdateQuantity);
+        group.MapPatch("{id:guid}/description", UpdateDescription);
+        group.MapDelete("{id:guid}", Delete);
     }
 }
 

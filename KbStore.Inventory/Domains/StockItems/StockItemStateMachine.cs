@@ -3,7 +3,7 @@
 #pragma warning disable CS8618, CS9264
 namespace KbStore.Inventory.Domains.StockItems;
 
-using Contracts.Domains;
+using Abstractions.Contracts;
 using MassTransit;
 
 

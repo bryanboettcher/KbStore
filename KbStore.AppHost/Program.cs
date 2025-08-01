@@ -20,9 +20,14 @@ public class Program
             .WithExternalHttpEndpoints()
             .WithReference(broker).WithParentRelationship(broker);
 
+        var backoffice = builder.AddProject<KbAdmin_Client>("admin")
+            .WithExternalHttpEndpoints()
+            .WithReference(webApi).WithParentRelationship(webApi);
+
         var app = builder.Build();
 
-        await app.RunAsync();
+        await app.RunAsync()
+            .ConfigureAwait(false);
     }
     
     private static void EnlistInventory(IDistributedApplicationBuilder builder, IResourceBuilder<RabbitMQServerResource> broker)

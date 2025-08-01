@@ -1,7 +1,7 @@
 ﻿namespace KbStore.Inventory.Domains.Products;
 
 using System.Numerics;
-using Contracts.Domains;
+using Abstractions.Contracts;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

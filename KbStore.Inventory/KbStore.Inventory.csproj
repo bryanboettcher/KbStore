@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.3.1" />
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.4.0" />
     <PackageReference Include="MassTransit" Version="8.5.1" />
     <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.5.1" />
     <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.1" />
@@ -30,12 +30,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KbStore.Contracts\KbStore.Contracts.csproj" />
+    <ProjectReference Include="..\KbStore.Inventory.Abstractions\KbStore.Inventory.Abstractions.csproj" />
     <ProjectReference Include="..\KbStore.ServiceDefaults\KbStore.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Migrations\" />
+    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

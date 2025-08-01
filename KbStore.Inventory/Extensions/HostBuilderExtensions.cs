@@ -4,7 +4,6 @@ using Domains.StockItems;
 using MassTransit;
 using Persistence;
 
-
 public static class HostBuilderExtensions
 {
     public static void AddMassTransit(this IHostApplicationBuilder builder)

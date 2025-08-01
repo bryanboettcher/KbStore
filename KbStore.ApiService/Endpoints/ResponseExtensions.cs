@@ -1,7 +1,6 @@
 ﻿namespace KbStore.ApiService.Endpoints;
 
-using Contracts.Domains;
-
+using Abstractions;
 
 public static class ResponseExtensions
 {

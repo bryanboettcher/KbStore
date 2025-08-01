@@ -1,6 +1,6 @@
 ﻿namespace KbStore.Inventory.Domains.StockItems;
 
-using Contracts.Domains;
+using Abstractions.Contracts;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

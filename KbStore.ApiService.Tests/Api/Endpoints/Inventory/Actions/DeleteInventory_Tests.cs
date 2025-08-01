@@ -1,7 +1,7 @@
 ﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Inventory.Actions;
 
 using ApiService.Endpoints.Inventory;
-using Contracts.Domains;
+using KbStore.Inventory.Abstractions.Contracts;
 using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
 using NUnit.Framework;
