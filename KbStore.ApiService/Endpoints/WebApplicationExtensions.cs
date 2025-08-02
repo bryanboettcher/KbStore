@@ -1,12 +1,11 @@
 ﻿namespace KbStore.ApiService.Endpoints;
 
-using Inventory;
-
+using Catalog;
 
 public static class WebApplicationExtensions
 {
     public static void MapApplicationEndpoints(this WebApplication app)
     {
-        StockItemEndpoints.MapTo(app);
+        InventoryEndpoints.MapTo(app);
     }
 }

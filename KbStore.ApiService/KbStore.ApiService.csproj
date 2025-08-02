@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KbStore.Abstractions\KbStore.Abstractions.csproj" />
-    <ProjectReference Include="..\KbStore.Inventory.Abstractions\KbStore.Inventory.Abstractions.csproj" />
+    <ProjectReference Include="..\KbStore.Catalog.Abstractions\KbStore.Catalog.Abstractions.csproj" />
     <ProjectReference Include="..\KbStore.ServiceDefaults\KbStore.ServiceDefaults.csproj" />
     <ProjectReference Include="..\KbStore.Storefront.Abstractions\KbStore.Storefront.Abstractions.csproj" />
   </ItemGroup>

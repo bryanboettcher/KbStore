@@ -40,7 +40,7 @@ public class Program
         var database = pgsql
             .AddDatabase("inventory");
 
-        builder.AddProject<KbStore_Inventory>("domain-inventory")
+        builder.AddProject<KbStore_Catalog>("domain-catalog")
             .WithReference(broker).WithParentRelationship(broker)
             .WithReference(database).WithParentRelationship(database);
     }

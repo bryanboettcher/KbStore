@@ -1,0 +1,93 @@
+﻿namespace KbStore.Catalog.Abstractions.Contracts;
+
+using KbStore.Abstractions;
+
+#region Base items
+
+public enum InventoryStatus
+{
+    Invalid,
+    Available,
+    Held,
+    Backordered,
+    Discontinued
+}
+
+public interface InventoryCommand
+{
+    Guid InventoryId { get; }
+}
+
+public interface InventoryModel
+{
+    Guid InventoryId { get; }
+    string PartNumber { get; }
+    string Description { get; }
+    int StockQuantity { get; }
+    InventoryStatus Status { get; }
+}
+
+public interface BaseInventoryEvent : InventoryModel;
+
+public interface InventoryFailure : RequestFailureBase;
+
+#endregion
+
+#region Creating stock items
+public interface CreateInventoryRequest : InventoryCommand
+{
+    string PartNumber { get; }
+    string Description { get; }
+    int StockQuantity { get; }
+}
+public interface CreateInventoryResponse : BaseInventoryEvent;
+public interface InventoryCreated : BaseInventoryEvent;
+#endregion
+
+// most events are a variant of "thing was modified", so we use this as a common base
+public interface InventoryUpdated : BaseInventoryEvent;
+
+
+#region Updating stock items
+public interface IncreaseInventoryQuantityRequest : InventoryCommand
+{
+    int Quantity { get; }
+}
+
+public interface DecreaseInventoryQuantityRequest : InventoryCommand
+{
+    int Quantity { get; }
+}
+
+public interface UpdateInventoryDescriptionRequest : InventoryCommand
+{
+    string Description { get; }
+}
+
+public interface UpdateInventoryResponse : BaseInventoryEvent;
+public interface InventoryQuantityIncreased : InventoryUpdated;
+public interface InventoryQuantityDecreased : InventoryUpdated;
+public interface InventoryDescriptionUpdated : InventoryUpdated;
+#endregion
+
+#region Actions
+public interface HoldInventoryRequest : InventoryCommand;
+public interface HoldInventoryResponse : BaseInventoryEvent;
+public interface InventoryHeld : InventoryUpdated;
+
+public interface ReleaseInventoryRequest : InventoryCommand;
+public interface ReleaseInventoryResponse : BaseInventoryEvent;
+public interface InventoryReleased : InventoryUpdated;
+#endregion
+
+#region Deleting stock items
+public interface DeleteInventoryRequest : InventoryCommand;
+public interface DeleteInventoryResponse : BaseInventoryEvent;
+public interface InventoryDiscontinued : InventoryUpdated;
+public interface InventoryDeleted : BaseInventoryEvent;
+#endregion
+
+#region Validation
+public interface InventoryStatusRequest : InventoryCommand;
+public interface InventoryStatusResponse : BaseInventoryEvent;
+#endregion

@@ -14,7 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\KbAdmin.Client\KbAdmin.Client.csproj" />
     <ProjectReference Include="..\KbStore.ApiService\KbStore.ApiService.csproj" />
-    <ProjectReference Include="..\KbStore.Inventory\KbStore.Inventory.csproj" />
+    <ProjectReference Include="..\KbStore.Catalog\KbStore.Catalog.csproj" />
     <ProjectReference Include="..\KbStore.Storefront\KbStore.Storefront.csproj" />
   </ItemGroup>
 

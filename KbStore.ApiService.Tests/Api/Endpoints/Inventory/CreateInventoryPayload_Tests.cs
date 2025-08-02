@@ -1,12 +1,12 @@
 ﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Inventory;
 
-using ApiService.Endpoints.Inventory;
+using ApiService.Endpoints.Catalog;
 using NUnit.Framework;
 using Shouldly;
 
 #pragma warning disable CS8618
 [TestFixture]
-public class CreateStockItemPayload_Tests
+public class CreateInventoryPayload_Tests
 {
     // PartNumber, Description, StockQuantity, IsValid
     [TestCase(null, "test description", 1000, false)]
@@ -21,7 +21,7 @@ public class CreateStockItemPayload_Tests
     [TestCase("FAST_M3X20", "test description", int.MaxValue, true)]
     public void IsValid_should_return_expected_result(string? partNumber, string? description, int stockQuantity, bool expectedValid)
     {
-        var payload = new CreateStockItemPayload
+        var payload = new CreateInventoryPayload
         {
             PartNumber = partNumber,
             Description = description,
@@ -34,7 +34,7 @@ public class CreateStockItemPayload_Tests
     [Test]
     public void Description_can_be_null()
     {
-        var payload = new CreateStockItemPayload
+        var payload = new CreateInventoryPayload
         {
             PartNumber = "FAST_M3X20",
             Description = null,
