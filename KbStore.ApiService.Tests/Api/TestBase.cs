@@ -131,7 +131,7 @@ public abstract class TestBase
 
     protected object? Resolve(Type service)
     {
-        var mock = Mocks.FirstOrDefault(m => m.GetType() == service);
+        var mock = Mocks.FirstOrDefault(service.IsInstanceOfType);
 
         return mock ?? ScopedProvider.ServiceProvider.GetService(service);
     }

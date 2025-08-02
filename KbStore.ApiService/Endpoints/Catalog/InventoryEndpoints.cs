@@ -18,8 +18,8 @@ public static class InventoryEndpoints
             payload.PartNumber!,
             payload.Description!,
             payload.StockQuantity,
-            cancellationToken)
-            .ConfigureAwait(false);
+            cancellationToken
+        ).ConfigureAwait(false);
 
         return Results.Ok(result);
     }
@@ -157,6 +157,6 @@ public class CreateInventoryPayload
 
     public bool IsValid()
         => !string.IsNullOrWhiteSpace(PartNumber)
-        && !string.IsNullOrWhiteSpace(Description)
+        && Description is not null
         && StockQuantity >= 0;
 }

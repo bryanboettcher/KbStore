@@ -32,7 +32,7 @@ public class CreateInventoryPayload_Tests
     }
 
     [Test]
-    public void Description_can_be_null()
+    public void Description_cannot_be_null()
     {
         var payload = new CreateInventoryPayload
         {
@@ -41,6 +41,6 @@ public class CreateInventoryPayload_Tests
             StockQuantity = 1000
         };
 
-        payload.IsValid().ShouldBeTrue();
+        payload.IsValid().ShouldBeFalse();
     }
 }
