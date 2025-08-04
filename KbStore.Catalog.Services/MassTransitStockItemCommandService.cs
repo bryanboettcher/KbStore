@@ -25,6 +25,15 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         int stockQuantity,
         CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(partNumber))
+            throw new InventoryValidationException("PartNumber must have a value");
+
+        if (string.IsNullOrEmpty(description))
+            throw new InventoryValidationException("Description must have a value");
+
+        if (stockQuantity < 0)
+            throw new InventoryValidationException("StockQuantity must be a positive value");
+
         var client = _bus.CreateRequestClient<CreateInventoryRequest>();
 
         Response response = await client.GetResponse<CreateInventoryResponse, InventoryFailure>(new

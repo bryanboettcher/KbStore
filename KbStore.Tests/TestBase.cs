@@ -2,14 +2,11 @@
 // ReSharper disable InconsistentNaming
 // ReSharper disable MemberCanBePrivate.Global
 
-namespace KbStore.ApiService.Tests.Api;
+namespace KbStore.Tests;
 
-using System.Reflection;
 using MassTransit;
 using MassTransit.Testing;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
 using NUnit.Framework;
 
 #pragma warning disable CS8618
@@ -18,9 +15,8 @@ public abstract class TestBase
     protected IServiceCollection Services;
     protected IServiceProvider? RootProvider;
     protected IServiceScope ScopedProvider;
-    
-    protected ITestHarness? Harness;
 
+    protected ITestHarness? Harness;
     protected Exception? LastException;
 
     protected TestBase()
@@ -52,8 +48,6 @@ public abstract class TestBase
     {
         await OnPreSetup();
 
-        Mocks.Clear();
-
         Harness = RootProvider!.GetRequiredService<ITestHarness>();
         ScopedProvider = RootProvider!.CreateScope();
 
@@ -72,7 +66,7 @@ public abstract class TestBase
             LastException = e;
         }
     }
-    
+
     [TearDown]
     public async Task Teardown()
     {
@@ -110,73 +104,4 @@ public abstract class TestBase
 
     protected abstract void Arrange();
     protected abstract Task Act();
-
-    protected List<object> Mocks = new();
-
-    protected TService MockOf<TService>()
-        where TService : class
-    {
-        var instance = Substitute.For<TService>();
-
-        Mocks.Add(instance);
-
-        return instance;
-    }
-
-    protected TService? Resolve<TService>()
-        where TService : class
-    {
-        return (TService?) Resolve(typeof(TService));
-    }
-
-    protected object? Resolve(Type service)
-    {
-        var mock = Mocks.FirstOrDefault(service.IsInstanceOfType);
-
-        return mock ?? ScopedProvider.ServiceProvider.GetService(service);
-    }
-
-    protected Task<IResult?> Execute(Delegate handler, params object?[] inputs)
-    {
-        var methodInfo = handler.Method;
-        var parameters = methodInfo.GetParameters();
-        var args = new object?[parameters.Length];
-
-        var provided = new List<object?>(inputs);
-
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            var paramType = parameters[i].ParameterType;
-
-            args[i] = ResolveParameter(paramType);
-        }
-
-        try
-        {
-            var result = handler.DynamicInvoke(args);
-
-            return result as Task<IResult?> 
-                ?? Task.FromResult(result as IResult);
-        }
-        catch (TargetParameterCountException)
-        {
-            throw new InvalidOperationException($"Could not resolve all parameters for method {methodInfo.Name}");
-        }
-
-        object? ResolveParameter(Type paramType)
-        {
-            var providedIndex = provided.FindIndex(o => o?.GetType() == paramType);
-            if (providedIndex != -1)
-            {
-                var item = provided[providedIndex];
-                provided.RemoveAt(providedIndex);
-                return item;
-            }
-
-            if (paramType == typeof(CancellationToken))
-                return CancellationToken.None;
-
-            return Resolve(paramType);
-        }
-    }
 }

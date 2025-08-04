@@ -24,6 +24,7 @@
     <ProjectReference Include="..\KbStore.ApiService\KbStore.ApiService.csproj" />
     <ProjectReference Include="..\KbStore.Catalog.Abstractions\KbStore.Catalog.Abstractions.csproj" />
     <ProjectReference Include="..\KbStore.Storefront.Abstractions\KbStore.Storefront.Abstractions.csproj" />
+    <ProjectReference Include="..\KbStore.Tests\KbStore.Tests.csproj" />
   </ItemGroup>
 
 </Project>

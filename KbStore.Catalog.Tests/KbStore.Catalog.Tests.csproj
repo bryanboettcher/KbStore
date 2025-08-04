@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KbStore.Catalog.Abstractions\KbStore.Catalog.Abstractions.csproj" />
+    <ProjectReference Include="..\KbStore.Catalog.Services\KbStore.Catalog.Services.csproj" />
+    <ProjectReference Include="..\KbStore.Catalog\KbStore.Catalog.csproj" />
+    <ProjectReference Include="..\KbStore.Tests\KbStore.Tests.csproj" />
+  </ItemGroup>
+
+</Project>

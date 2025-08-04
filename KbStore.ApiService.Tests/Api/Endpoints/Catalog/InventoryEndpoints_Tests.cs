@@ -3,7 +3,7 @@
 using Microsoft.AspNetCore.Http;
 
 
-public abstract class InventoryEndpoints_Tests : TestBase
+public abstract class InventoryEndpoints_Tests : Endpoints_Tests
 {
     protected IResult? Output;
 }

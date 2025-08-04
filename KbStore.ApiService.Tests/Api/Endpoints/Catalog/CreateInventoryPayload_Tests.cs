@@ -1,6 +1,6 @@
-﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Inventory;
+﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Catalog;
 
-using ApiService.Endpoints.Catalog;
+using KbStore.ApiService.Endpoints.Catalog;
 using NUnit.Framework;
 using Shouldly;
 

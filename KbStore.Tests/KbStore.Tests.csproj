@@ -1,16 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Testing" Version="9.4.0" />
     <PackageReference Include="MassTransit.TestFramework" Version="8.5.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="NSubstitute" Version="5.3.0" />
@@ -20,18 +20,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="NUnit3TestAdapter" Version="5.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\KbStore.AppHost\KbStore.AppHost.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="System.Net" />
-    <Using Include="Microsoft.Extensions.DependencyInjection" />
-    <Using Include="Aspire.Hosting.ApplicationModel" />
-    <Using Include="Aspire.Hosting.Testing" />
-    <Using Include="NUnit.Framework" />
+    <PackageReference Include="Shouldly" Version="4.3.0" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.3" />
   </ItemGroup>
 
 </Project>
