@@ -7,17 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KbStore.Client\KbStore.Client.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="Components\Widgets\" />
     <Folder Include="Components\Pages\Inventory\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.12.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KbStore.ApiClient\KbStore.ApiClient.csproj" />
+    <ProjectReference Include="..\KbStore.ServiceDefaults\KbStore.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

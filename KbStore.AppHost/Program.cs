@@ -1,3 +1,4 @@
+using Aspire.Hosting;
 using Projects;
 
 namespace KbStore.AppHost;
@@ -22,7 +23,8 @@ public class Program
 
         var backoffice = builder.AddProject<KbAdmin_Client>("admin")
             .WithExternalHttpEndpoints()
-            .WithReference(webApi).WithParentRelationship(webApi);
+            .WithReference(webApi).WithParentRelationship(webApi)
+            .WithEnvironment("ApiConnectionOptions__ApiRoot", webApi.GetEndpoint("http"));
 
         var app = builder.Build();
 

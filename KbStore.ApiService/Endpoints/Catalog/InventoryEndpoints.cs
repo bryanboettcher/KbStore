@@ -1,11 +1,16 @@
 ﻿namespace KbStore.ApiService.Endpoints.Catalog;
 
 using Abstractions;
+using KbStore.Catalog.Abstractions.Contracts;
 using KbStore.Catalog.Abstractions.Services;
 using Microsoft.AspNetCore.Mvc;
 
 public static class InventoryEndpoints
 {
+    [ProducesResponseType<InventoryModel>(200)]
+    [ProducesResponseType<ProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    [ProducesResponseType<ProblemDetails>(500)]
     public static async Task<IResult> Create(
         [FromBody] CreateInventoryPayload payload,
         [FromServices] IInventoryCommandService commandService,
@@ -24,6 +29,10 @@ public static class InventoryEndpoints
         return Results.Ok(result);
     }
 
+    [ProducesResponseType<InventoryModel>(200)]
+    [ProducesResponseType<ProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    [ProducesResponseType<ProblemDetails>(500)]
     public static async Task<IResult> IncreaseQuantity(
         [FromRoute] Guid id,
         [FromRoute] int quantity,
@@ -39,6 +48,10 @@ public static class InventoryEndpoints
         return Results.Ok(result);
     }
 
+    [ProducesResponseType<InventoryModel>(200)]
+    [ProducesResponseType<ProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    [ProducesResponseType<ProblemDetails>(500)]
     public static async Task<IResult> DecreaseQuantity(
         [FromRoute] Guid id,
         [FromRoute] int quantity,
@@ -54,6 +67,10 @@ public static class InventoryEndpoints
         return Results.Ok(result);
     }
 
+    [ProducesResponseType<InventoryModel>(200)]
+    [ProducesResponseType<ProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    [ProducesResponseType<ProblemDetails>(500)]
     public static async Task<IResult> UpdateDescription(
         [FromRoute] Guid id,
         [FromBody] string? description,
@@ -69,6 +86,10 @@ public static class InventoryEndpoints
         return Results.Ok(result);
     }
 
+    [ProducesResponseType<InventoryModel>(200)]
+    [ProducesResponseType<ProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    [ProducesResponseType<ProblemDetails>(500)]
     public static async Task<IResult> Hold(
         [FromRoute] Guid id,
         [FromServices] IInventoryCommandService commandService,
@@ -80,6 +101,10 @@ public static class InventoryEndpoints
         return Results.Ok(result);
     }
 
+    [ProducesResponseType<InventoryModel>(200)]
+    [ProducesResponseType<ProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    [ProducesResponseType<ProblemDetails>(500)]
     public static async Task<IResult> Release(
         [FromRoute] Guid id,
         [FromServices] IInventoryCommandService commandService,
@@ -91,6 +116,10 @@ public static class InventoryEndpoints
         return Results.Ok(result);
     }
 
+    [ProducesResponseType<InventoryModel>(200)]
+    [ProducesResponseType<ProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    [ProducesResponseType<ProblemDetails>(500)]
     public static async Task<IResult> Delete(
         [FromRoute] Guid id,
         [FromServices] IInventoryCommandService commandService,
@@ -102,6 +131,10 @@ public static class InventoryEndpoints
         return Results.Ok(result);
     }
 
+    [ProducesResponseType<InventoryModel>(200)]
+    [ProducesResponseType<ProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    [ProducesResponseType<ProblemDetails>(500)]
     public static async Task<IResult> GetById(
         [FromRoute] Guid id,
         [FromServices] IInventoryCommandService commandService,
@@ -113,6 +146,10 @@ public static class InventoryEndpoints
         return Results.Ok(result);
     }
 
+    [ProducesResponseType<PaginatedResponse<InventoryModel>>(200)]
+    [ProducesResponseType<ProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    [ProducesResponseType<ProblemDetails>(500)]
     public static async Task<IResult> GetAll(
         [AsParameters] PaginatedQuery pagination,
         [FromServices] IInventoryQueryService queryService,

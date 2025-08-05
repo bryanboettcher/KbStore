@@ -1,6 +1,5 @@
 ﻿namespace KbStore.Catalog.Domains.Inventory;
 
-using KbStore.Catalog.Abstractions.Contracts;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -15,6 +14,8 @@ public sealed class InventoryEntity : SagaStateMachineInstance
     public string PartNumber { get; set; } = "";
     public string Description { get; set; } = "";
     public int StockQuantity { get; set; }
+    public DateTimeOffset CreatedOn { get; set; }
+    public DateTimeOffset UpdatedOn { get; set; }
 }
 
 

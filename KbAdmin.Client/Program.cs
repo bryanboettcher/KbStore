@@ -1,6 +1,9 @@
 namespace KbAdmin.Client;
 
+using Extensions;
 using KbAdmin.Client.Components;
+using KbStore.ServiceDefaults;
+using Microsoft.FluentUI.AspNetCore.Components;
 
 
 public class Program
@@ -9,9 +12,16 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        builder.AddServiceDefaults();
+
         // Add services to the container.
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
+
+        builder.Services.AddFluentUIComponents();
+
+        builder.Services.AddApiConnectionOptions();
+        builder.Services.AddKiotaServices();
 
         var app = builder.Build();
 

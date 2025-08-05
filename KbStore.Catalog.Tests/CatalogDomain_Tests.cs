@@ -32,10 +32,12 @@ public abstract class CreateAsync_Tests : CatalogDomain_Tests
     protected string? TestPartNumber;
     protected string? TestDescription;
     protected int TestQuantity;
+    protected DateTimeOffset Now = DateTimeOffset.Now;
 
     protected override void OnServicesCreating(IServiceCollection services)
     {
         services.AddScoped<MassTransitInventoryCommandService>();
+        services.AddScoped<Func<DateTimeOffset>>(_ => () => Now);
     }
 
     protected override void OnHarnessCreating(IBusRegistrationConfigurator configurator)
@@ -82,6 +84,14 @@ public abstract class CreateAsync_Tests : CatalogDomain_Tests
         [Test]
         public void It_should_have_available_status() 
             => Result!.Status.ShouldBe(InventoryStatus.Available);
+
+        [Test]
+        public void It_should_set_CreatedOn()
+            => Result!.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
+
+        [Test]
+        public void It_should_set_UpdatedOn()
+            => Result!.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
 
         [Test]
         public async Task It_should_publish_inventory_created_event()

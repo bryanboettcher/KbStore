@@ -8,11 +8,13 @@
 
   <ItemGroup>
     <PackageReference Include="MassTransit" Version="8.5.1" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\KbStore.Abstractions\KbStore.Abstractions.csproj" />
     <ProjectReference Include="..\KbStore.Catalog.Abstractions\KbStore.Catalog.Abstractions.csproj" />
+    <ProjectReference Include="..\KbStore.Catalog\KbStore.Catalog.csproj" />
   </ItemGroup>
 
 </Project>

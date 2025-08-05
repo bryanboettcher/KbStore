@@ -13,10 +13,12 @@ using MassTransit;
 public class MassTransitInventoryCommandService : IInventoryCommandService
 {
     private readonly IBus _bus;
+    private readonly Func<DateTimeOffset> _now;
 
-    public MassTransitInventoryCommandService(IBus bus)
+    public MassTransitInventoryCommandService(IBus bus, Func<DateTimeOffset> now)
     {
         _bus = bus ?? throw new ArgumentNullException(nameof(bus));
+        _now = now ?? throw new ArgumentNullException(nameof(now));
     }
 
     public async Task<InventoryModel> CreateAsync(
@@ -35,12 +37,13 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
             throw new InventoryValidationException("StockQuantity must be a positive value");
 
         var client = _bus.CreateRequestClient<CreateInventoryRequest>();
-
+        
         Response response = await client.GetResponse<CreateInventoryResponse, InventoryFailure>(new
         {
             PartNumber = partNumber,
             Description = description,
-            StockQuantity = stockQuantity
+            StockQuantity = stockQuantity,
+            Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
         return response switch
@@ -58,7 +61,8 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
         {
             CorrelationId = inventoryId,
-            StockQuantity = quantity
+            StockQuantity = quantity,
+            Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
         return response switch
@@ -76,7 +80,8 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
         {
             CorrelationId = inventoryId,
-            StockQuantity = quantity
+            StockQuantity = quantity,
+            Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
         return response switch
@@ -97,7 +102,8 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
         {
             CorrelationId = inventoryId,
-            Description = description
+            Description = description,
+            Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
         return response switch
@@ -116,7 +122,8 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         Response response = await client.GetResponse<HoldInventoryResponse, InventoryFailure>(new
         {
-            CorrelationId = inventoryId
+            CorrelationId = inventoryId,
+            Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
         return response switch
@@ -135,7 +142,8 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         Response response = await client.GetResponse<ReleaseInventoryResponse, InventoryFailure>(new
         {
-            CorrelationId = inventoryId
+            CorrelationId = inventoryId,
+            Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
         return response switch
@@ -154,7 +162,8 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         Response response = await client.GetResponse<DeleteInventoryResponse, InventoryFailure>(new
         {
-            CorrelationId = inventoryId
+            CorrelationId = inventoryId,
+            Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
         return response switch
@@ -171,7 +180,8 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         Response response = await client.GetResponse<InventoryStatusResponse, InventoryFailure>(new
         {
-            InventoryId = inventoryId
+            InventoryId = inventoryId,
+            Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
         return response switch

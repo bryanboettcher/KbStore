@@ -16,6 +16,7 @@ public enum InventoryStatus
 public interface InventoryCommand
 {
     Guid InventoryId { get; }
+    DateTimeOffset Timestamp { get; }
 }
 
 public interface InventoryModel
@@ -25,6 +26,9 @@ public interface InventoryModel
     string Description { get; }
     int StockQuantity { get; }
     InventoryStatus Status { get; }
+
+    DateTimeOffset CreatedOn { get; }
+    DateTimeOffset UpdatedOn { get; }
 }
 
 public interface BaseInventoryEvent : InventoryModel;

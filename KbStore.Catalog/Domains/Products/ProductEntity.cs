@@ -1,6 +1,5 @@
 ﻿namespace KbStore.Catalog.Domains.Products;
 
-using System.Numerics;
 using Inventory;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +19,9 @@ public class ProductEntity : SagaStateMachineInstance
     public int Quantity { get; set; }
     public decimal Price { get; set; }
     public decimal? Weight { get; set; }
-    public Vector3? Dimensions { get; set; }
+    public float? Height { get; set; }
+    public float? Width { get; set; }
+    public float? Depth { get; set; }
 
     public InventoryEntity? Inventory { get; set; }
 }
