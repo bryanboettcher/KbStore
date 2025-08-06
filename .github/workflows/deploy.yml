@@ -29,7 +29,8 @@ jobs:
       run: dotnet build --no-restore --configuration Release
 
     - name: Run tests with coverage
-      run: dotnet test --no-build --collect:"XPlat Code Coverage" --results-directory TestResults
+      run: |
+          dotnet test ./KbStore.sln --no-build --collect:"XPlat Code Coverage" --results-directory TestResults
 
     - name: Extract coverage and enforce threshold
       run: |
