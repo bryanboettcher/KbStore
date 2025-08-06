@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
   </PropertyGroup>
@@ -15,10 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KbStore.Catalog.Abstractions\KbStore.Catalog.Abstractions.csproj" />
-    <ProjectReference Include="..\KbStore.Catalog.Services\KbStore.Catalog.Services.csproj" />
-    <ProjectReference Include="..\KbStore.Catalog\KbStore.Catalog.csproj" />
-    <ProjectReference Include="..\KbStore.Tests\KbStore.Tests.csproj" />
+    <ProjectReference Include="..\KbStore.Storefront.Abstractions\KbStore.Storefront.Abstractions.csproj" />
+    <ProjectReference Include="..\KbStore.Storefront\KbStore.Storefront.csproj" />
   </ItemGroup>
 
 </Project>

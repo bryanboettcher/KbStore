@@ -45,9 +45,11 @@ public abstract class CreateAsync_Tests : CatalogDomain_Tests
         configurator.AddSagaStateMachine<InventoryStateMachine, InventoryEntity>();
     }
 
-    protected override async Task OnPostSetup()
+    protected override Task OnPostSetup()
     {
         Subject = ScopedProvider.ServiceProvider.GetRequiredService<MassTransitInventoryCommandService>();
+
+        return Task.CompletedTask;
     }
 
     protected override void Arrange()

@@ -1,0 +1,31 @@
+name: Build and Publish
+on:
+    push:
+        branches: [ "main", "develop" ]
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v4
+  
+        - name: Configure Build Environment
+          uses: actions/setup-dotnet@v4
+          with:
+            dotnet-version: '9.0.x'
+            cache: true
+
+        - name: Install dependencies
+          run: dotnet restore
+
+        - name: Build
+          run: dotnet build --no-restore
+
+        - name: Test with the dotnet CLI
+          run: dotnet test --no-build --logger trx --results-directory TestResults
+
+        - name: Upload dotnet test TestResults
+          uses: actions/upload-artifact@v4
+          with:
+            name: dotnet-test-results
+            path: TestResults
+          if: ${{ always() }}
