@@ -12,19 +12,22 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["KbStore.Services/KbStore.Services.csproj", "KbStore.Services/"]
-RUN dotnet restore "./KbStore.Services/KbStore.Services.csproj"
+COPY ["KbStore.Catalog/KbStore.Catalog.csproj", "KbStore.Catalog/"]
+COPY ["KbStore.Catalog.Abstractions/KbStore.Catalog.Abstractions.csproj", "KbStore.Catalog.Abstractions/"]
+COPY ["KbStore.Abstractions/KbStore.Abstractions.csproj", "KbStore.Abstractions/"]
+COPY ["KbStore.ServiceDefaults/KbStore.ServiceDefaults.csproj", "KbStore.ServiceDefaults/"]
+RUN dotnet restore "./KbStore.Catalog/KbStore.Catalog.csproj"
 COPY . .
-WORKDIR "/src/KbStore.Services"
-RUN dotnet build "./KbStore.Services.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/KbStore.Catalog"
+RUN dotnet build "./KbStore.Catalog.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./KbStore.Services.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./KbStore.Catalog.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "KbStore.Services.dll"]
+ENTRYPOINT ["dotnet", "KbStore.Catalog.dll"]

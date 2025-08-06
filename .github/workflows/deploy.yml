@@ -1,31 +1,94 @@
-name: Build and Publish
+name: Build, Test, and Publish
+
 on:
-    push:
-        branches: [ "main", "develop" ]
+  push:
+    branches: [ "main", "develop" ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  COVERAGE_THRESHOLD: 50
+  REGISTRY: ghcr.io
+  IMAGE_NAME_PREFIX: ${{ github.repository }}
+
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-        - uses: actions/checkout@v4
-  
-        - name: Configure Build Environment
-          uses: actions/setup-dotnet@v4
-          with:
-            dotnet-version: '9.0.x'
-            cache: true
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-        - name: Install dependencies
-          run: dotnet restore
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        cache: true
 
-        - name: Build
-          run: dotnet build --no-restore
+    - name: Restore dependencies
+      run: dotnet restore
 
-        - name: Test with the dotnet CLI
-          run: dotnet test --no-build --logger trx --results-directory TestResults
+    - name: Build solution
+      run: dotnet build --no-restore --configuration Release
 
-        - name: Upload dotnet test TestResults
-          uses: actions/upload-artifact@v4
-          with:
-            name: dotnet-test-results
-            path: TestResults
-          if: ${{ always() }}
+    - name: Run tests with coverage
+      run: dotnet test --no-build --collect:"XPlat Code Coverage" --results-directory TestResults
+
+    - name: Extract coverage and enforce threshold
+      run: |
+        report=$(find TestResults -name coverage.cobertura.xml | head -n 1)
+        if [ -z "$report" ]; then
+          echo "!! Coverage report not found"
+          exit 1
+        fi
+        # Extract line-rate from cobertura report
+        coverage=$(xmllint --xpath "string(//coverage/@line-rate)" "$report")
+        percent=$(awk "BEGIN { print int($coverage * 100) }")
+        echo "Code coverage is $percent%"
+        if [ "$percent" -lt "${COVERAGE_THRESHOLD}" ]; then
+          echo "!! Code coverage $percent% is below threshold of ${COVERAGE_THRESHOLD}%"
+          exit 1
+        fi
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set image tag
+      id: set-tag
+      run: echo "tag=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+
+    - name: Build and push ApiService
+      uses: docker/build-push-action@v5
+      with:
+        context: ./KbStore.ApiService
+        file: ./KbStore.ApiService/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-apiservice:${{ steps.set-tag.outputs.tag }}
+
+    - name: Build and push Catalog
+      uses: docker/build-push-action@v5
+      with:
+        context: ./KbStore.Catalog
+        file: ./KbStore.Catalog/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-catalog:${{ steps.set-tag.outputs.tag }}
+
+    - name: Build and push Storefront
+      uses: docker/build-push-action@v5
+      with:
+        context: ./KbStore.Storefront
+        file: ./KbStore.Storefront/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-storefront:${{ steps.set-tag.outputs.tag }}
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: TestResults
