@@ -21,11 +21,6 @@ public class Program
             .WithExternalHttpEndpoints()
             .WithReference(broker).WithParentRelationship(broker);
 
-        var backoffice = builder.AddProject<KbAdmin_Client>("admin")
-            .WithExternalHttpEndpoints()
-            .WithReference(webApi).WithParentRelationship(webApi)
-            .WithEnvironment("ApiConnectionOptions__ApiRoot", webApi.GetEndpoint("http"));
-
         var app = builder.Build();
 
         await app.RunAsync()
