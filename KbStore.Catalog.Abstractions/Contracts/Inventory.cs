@@ -44,7 +44,7 @@ public interface CreateInventoryRequest : InventoryCommand
     string Description { get; }
     int StockQuantity { get; }
 }
-public interface CreateInventoryResponse : BaseInventoryEvent;
+public interface CreateInventoryResponse : InventoryModel;
 public interface InventoryCreated : BaseInventoryEvent;
 #endregion
 
@@ -55,12 +55,12 @@ public interface InventoryUpdated : BaseInventoryEvent;
 #region Updating stock items
 public interface IncreaseInventoryQuantityRequest : InventoryCommand
 {
-    int Quantity { get; }
+    int Amount { get; }
 }
 
 public interface DecreaseInventoryQuantityRequest : InventoryCommand
 {
-    int Quantity { get; }
+    int Amount { get; }
 }
 
 public interface UpdateInventoryDescriptionRequest : InventoryCommand
@@ -68,7 +68,7 @@ public interface UpdateInventoryDescriptionRequest : InventoryCommand
     string Description { get; }
 }
 
-public interface UpdateInventoryResponse : BaseInventoryEvent;
+public interface UpdateInventoryResponse : InventoryModel;
 public interface InventoryQuantityIncreased : InventoryUpdated;
 public interface InventoryQuantityDecreased : InventoryUpdated;
 public interface InventoryDescriptionUpdated : InventoryUpdated;
@@ -76,22 +76,22 @@ public interface InventoryDescriptionUpdated : InventoryUpdated;
 
 #region Actions
 public interface HoldInventoryRequest : InventoryCommand;
-public interface HoldInventoryResponse : BaseInventoryEvent;
+public interface HoldInventoryResponse : InventoryModel;
 public interface InventoryHeld : InventoryUpdated;
 
 public interface ReleaseInventoryRequest : InventoryCommand;
-public interface ReleaseInventoryResponse : BaseInventoryEvent;
+public interface ReleaseInventoryResponse : InventoryModel;
 public interface InventoryReleased : InventoryUpdated;
 #endregion
 
 #region Deleting stock items
 public interface DeleteInventoryRequest : InventoryCommand;
-public interface DeleteInventoryResponse : BaseInventoryEvent;
+public interface DeleteInventoryResponse : InventoryModel;
 public interface InventoryDiscontinued : InventoryUpdated;
 public interface InventoryDeleted : BaseInventoryEvent;
 #endregion
 
 #region Validation
 public interface InventoryStatusRequest : InventoryCommand;
-public interface InventoryStatusResponse : BaseInventoryEvent;
+public interface InventoryStatusResponse : InventoryModel;
 #endregion

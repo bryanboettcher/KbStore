@@ -58,6 +58,6 @@ public abstract class Release_Tests : InventoryEndpoints_Tests
         public void It_should_throw() => LastException.ShouldBeOfType<TestInventoryException>();
 
         [Test]
-        public void It_should_have_correct_message() => LastException?.Message.ShouldBe("Test error");
+        public void It_should_have_correct_message() => LastException!.Message.ShouldBe("Test error");
     }
 }

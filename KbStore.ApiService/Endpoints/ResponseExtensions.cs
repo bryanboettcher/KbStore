@@ -9,8 +9,8 @@ public static class ResponseExtensions
     {
         return failure.FailureType switch
         {
-            FailureType.Conflict => Results.Conflict(failure),
-            FailureType.Missing => Results.NotFound(failure),
+            FailureTypes.Conflict => Results.Conflict(failure),
+            FailureTypes.Missing => Results.NotFound(failure),
             _ => throw new ArgumentOutOfRangeException()
         };
     }

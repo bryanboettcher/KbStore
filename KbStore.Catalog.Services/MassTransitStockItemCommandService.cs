@@ -1,5 +1,6 @@
 ﻿namespace KbStore.Catalog.Services;
 
+using System.Diagnostics;
 using Abstractions.Contracts;
 using Abstractions.Exceptions;
 using Abstractions.Services;
@@ -56,12 +57,18 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
     public async Task<InventoryModel> IncreaseQuantityAsync(Guid inventoryId, int quantity, CancellationToken cancellationToken = default)
     {
+        if (inventoryId == Guid.Empty)
+            throw new ArgumentException("InventoryId must be set", nameof(inventoryId));
+
+        if (quantity <= 0)
+            throw new InventoryValidationException("Quantity can only be increased by a positive whole number");
+
         var client = _bus.CreateRequestClient<IncreaseInventoryQuantityRequest>();
 
         Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
         {
-            CorrelationId = inventoryId,
-            StockQuantity = quantity,
+            InventoryId = inventoryId,
+            Amount = quantity,
             Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
@@ -79,8 +86,8 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
         {
-            CorrelationId = inventoryId,
-            StockQuantity = quantity,
+            InventoryId = inventoryId,
+            Amount = quantity,
             Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
@@ -101,7 +108,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
         {
-            CorrelationId = inventoryId,
+            InventoryId = inventoryId,
             Description = description,
             Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
@@ -122,7 +129,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         Response response = await client.GetResponse<HoldInventoryResponse, InventoryFailure>(new
         {
-            CorrelationId = inventoryId,
+            InventoryId = inventoryId,
             Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
@@ -142,7 +149,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         Response response = await client.GetResponse<ReleaseInventoryResponse, InventoryFailure>(new
         {
-            CorrelationId = inventoryId,
+            InventoryId = inventoryId,
             Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
@@ -162,7 +169,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         Response response = await client.GetResponse<DeleteInventoryResponse, InventoryFailure>(new
         {
-            CorrelationId = inventoryId,
+            InventoryId = inventoryId,
             Timestamp = _now()
         }, cancellationToken).ConfigureAwait(false);
 
@@ -201,12 +208,12 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         return failure.FailureType switch
         {
-            FailureType.Missing => new InventoryNotFoundException(inventoryId ?? Guid.Empty),
-            FailureType.Conflict => new InventoryConflictException(message),
-            FailureType.Validation => new InventoryValidationException(message),
-            FailureType.InvalidState => new InventoryStateException(inventoryId ?? Guid.Empty, "Unknown", "Unknown"),
-            FailureType.Forbidden => new InventoryStateException(inventoryId ?? Guid.Empty, "Unknown", "Unknown"),
-            FailureType.InternalError => new InventoryException($"Internal error: {message}"),
+            FailureTypes.Missing => new InventoryNotFoundException(inventoryId ?? Guid.Empty),
+            FailureTypes.Conflict => new InventoryConflictException(message),
+            FailureTypes.Validation => new InventoryValidationException(message),
+            FailureTypes.InvalidState => new InventoryStateException(inventoryId ?? Guid.Empty, "Unknown", "Unknown"),
+            FailureTypes.Forbidden => new InventoryStateException(inventoryId ?? Guid.Empty, "Unknown", "Unknown"),
+            FailureTypes.InternalError => new InventoryException($"Internal error: {message}"),
             _ => new InventoryException($"Unmapped failure type '{failure.FailureType}': {message}")
         };
     }

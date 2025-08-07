@@ -3,10 +3,10 @@
 public interface RequestFailureBase
 {
     string Message { get; }
-    FailureType FailureType { get; }
+    FailureTypes FailureType { get; }
 }
 
-public enum FailureType
+public enum FailureTypes
 {
     /// <summary>
     /// The requested resource was not found.
