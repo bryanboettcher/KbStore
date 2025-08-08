@@ -2,8 +2,25 @@
 
 public interface RequestFailureBase
 {
+    /// <summary>
+    /// A human-readable description of the error.
+    /// </summary>
     string Message { get; }
+
+    /// <summary>
+    /// A high-level mapping of the classification of failure.
+    /// </summary>
     FailureTypes FailureType { get; }
+
+    /// <summary>
+    /// An optional value with additional details.
+    /// </summary>
+    string? CurrentState { get; }
+
+    /// <summary>
+    /// An optional value with additional details.
+    /// </summary>
+    string? Operation { get; }
 }
 
 public enum FailureTypes

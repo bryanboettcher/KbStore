@@ -9,6 +9,21 @@ using MassTransit;
 
 public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEntity>
 {
+    private enum Failures
+    {
+        CreateNegativeQuantity,
+        DuplicatePartNumber,
+        InsufficientQuantity,
+        AlreadyHeld,
+        ModifyHeld,
+        NotHeld,
+        ModifyDiscontinued,
+        HoldDiscontinued,
+        ModifyBackordered,
+        HoldBackordered
+    }
+
+
     public InventoryStateMachine()
     {
         InstanceState(m => m.CurrentState,
@@ -30,7 +45,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
 
         Initially(
             When(Created, context => context.Message.StockQuantity < 0)
-                .RespondAsync(Failure("Stock quantity cannot be negative", FailureTypes.Validation)),
+                .RespondAsync(Failure(Failures.CreateNegativeQuantity)),
 
             When(Created, context => context.Message.StockQuantity >= 0)
                 .Then(SetProperties)
@@ -42,7 +57,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
 
         During(Available,
             When(Created)
-                .RespondAsync(context => Failure($"Inventory item with part number '{context.Message.PartNumber}' already exists", FailureTypes.Conflict)(context)),
+                .RespondAsync(context => Failure(Failures.DuplicatePartNumber)(context)),
 
             When(QuantityIncreased)
                 .Then(context => context.Saga.StockQuantity += context.Message.Amount)
@@ -51,7 +66,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
                 .PublishAsync(Message<InventoryQuantityIncreased>),
 
             When(QuantityDecreased, context => context.Message.Amount > context.Saga.StockQuantity)
-                .RespondAsync(context => Failure($"Cannot decrease quantity by {context.Message.Amount}. Current stock: {context.Saga.StockQuantity}", FailureTypes.InvalidState)(context)),
+                .RespondAsync(context => Failure(Failures.InsufficientQuantity)(context)),
 
             When(QuantityDecreased, context => context.Message.Amount <= context.Saga.StockQuantity)
                 .Then(context => context.Saga.StockQuantity -= context.Message.Amount)
@@ -70,6 +85,9 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
                 .Then(UpdateTimestamp)
                 .RespondAsync(Message<HoldInventoryResponse>)
                 .PublishAsync(Message<InventoryHeld>),
+
+            When(Released)
+                .RespondAsync(context => Failure(Failures.NotHeld)(context)),
 
             When(Deleted)
                 .TransitionTo(Discontinued)
@@ -96,13 +114,16 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
                 .Then(UpdateTimestamp)
                 .RespondAsync(Message<DeleteInventoryResponse>)
                 .PublishAsync(Message<InventoryDiscontinued>),
+
+            When(Held)
+                .RespondAsync(context => Failure(Failures.AlreadyHeld)(context)),
             
             // Reject quantity changes while on hold
             When(QuantityIncreased)
-                .RespondAsync(context => Failure("Cannot modify quantity while inventory item is on hold", FailureTypes.InvalidState)(context)),
+                .RespondAsync(context => Failure(Failures.ModifyHeld)(context)),
 
             When(QuantityDecreased)
-                .RespondAsync(context => Failure("Cannot modify quantity while inventory item is on hold", FailureTypes.InvalidState)(context))
+                .RespondAsync(context => Failure(Failures.ModifyHeld)(context))
         );
 
         During(Discontinued,
@@ -113,18 +134,17 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
                 .PublishAsync(Message<InventoryDeleted>)
                 .Finalize(),
 
-            // Reject all other operations on discontinued items
             When(QuantityIncreased)
-                .RespondAsync(context => Failure("Cannot modify discontinued inventory item", FailureTypes.InvalidState)(context)),
+                .RespondAsync(context => Failure(Failures.ModifyDiscontinued)(context)),
 
             When(QuantityDecreased)
-                .RespondAsync(context => Failure("Cannot modify discontinued inventory item", FailureTypes.InvalidState)(context)),
+                .RespondAsync(context => Failure(Failures.ModifyDiscontinued)(context)),
 
             When(DescriptionUpdated)
-                .RespondAsync(context => Failure("Cannot modify discontinued inventory item", FailureTypes.InvalidState)(context)),
+                .RespondAsync(context => Failure(Failures.ModifyDiscontinued)(context)),
 
             When(Held)
-                .RespondAsync(context => Failure("Cannot hold discontinued inventory item", FailureTypes.InvalidState)(context))
+                .RespondAsync(context => Failure(Failures.HoldDiscontinued)(context))
         );
 
         During(Backordered,
@@ -143,10 +163,10 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
                 .PublishAsync(Message<InventoryQuantityIncreased>),
 
             When(QuantityDecreased)
-                .RespondAsync(context => Failure("Cannot decrease quantity of backordered inventory item", FailureTypes.InvalidState)(context)),
+                .RespondAsync(context => Failure(Failures.ModifyBackordered)(context)),
 
             When(Held)
-                .RespondAsync(context => Failure("Cannot hold backordered inventory item", FailureTypes.InvalidState)(context)),
+                .RespondAsync(context => Failure(Failures.HoldBackordered)(context)),
 
             When(Deleted)
                 .TransitionTo(Discontinued)
@@ -201,12 +221,90 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             context.Saga.UpdatedOn
         });
 
-    private static Func<BehaviorContext<InventoryEntity>, Task<SendTuple<InventoryFailure>>> Failure(string message, FailureTypes failureType)
-        => context => context.Init<InventoryFailure>(new
+    private static Func<BehaviorContext<InventoryEntity>, Task<SendTuple<InventoryFailure>>> Failure(Failures failure)
+    {
+        return context => context.Init<InventoryFailure>(MapFailure(context.Saga, failure));
+
+        static object MapFailure(InventoryEntity entity, Failures failure)
         {
-            Message = message,
-            FailureType = failureType
-        });
+            var currentState = CalculateInventoryStatus(entity);
+
+            return failure switch
+            {
+                Failures.CreateNegativeQuantity => new
+                {
+                    FailureType = FailureTypes.Validation,
+                    CurrentState = "Missing",
+                    Operation = "Create",
+                    Message = "Stock quantity cannot be negative"
+                },
+                Failures.DuplicatePartNumber => new
+                {
+                    FailureType = FailureTypes.Conflict,
+                    CurrentState = currentState.ToString(),
+                    Operation = "Create",
+                    Message = $"Inventory item with part number '{entity.PartNumber}' already exists"
+                },
+                Failures.InsufficientQuantity => new
+                {
+                    FailureType = FailureTypes.InvalidState,
+                    CurrentState = currentState.ToString(),
+                    Operation = "Modify",
+                    Message = $"Cannot decrease quantity. Current stock: {entity.StockQuantity}"
+                },
+                Failures.AlreadyHeld => new
+                {
+                    FailureType = FailureTypes.InvalidState,
+                    CurrentState = currentState.ToString(),
+                    Operation = "Hold",
+                    Message = "Inventory item is already on hold"
+                },
+                Failures.ModifyHeld => new
+                {
+                    FailureType = FailureTypes.InvalidState,
+                    CurrentState = currentState.ToString(),
+                    Operation = "Modify",
+                    Message = "Cannot modify quantity while inventory item is on hold"
+                },
+                Failures.NotHeld => new
+                {
+                    FailureType = FailureTypes.InvalidState,
+                    CurrentState = currentState.ToString(),
+                    Operation = "Release",
+                    Message = "Cannot release an inventory item not on hold"
+                },
+                Failures.ModifyDiscontinued => new
+                {
+                    FailureType = FailureTypes.InvalidState,
+                    CurrentState = currentState.ToString(),
+                    Operation = "Modify",
+                    Message = "Cannot modify discontinued inventory item"
+                },
+                Failures.HoldDiscontinued => new
+                {
+                    FailureType = FailureTypes.InvalidState,
+                    CurrentState = currentState.ToString(),
+                    Operation = "Hold",
+                    Message = "Cannot hold discontinued inventory item"
+                },
+                Failures.ModifyBackordered => new
+                {
+                    FailureType = FailureTypes.InvalidState,
+                    CurrentState = currentState.ToString(),
+                    Operation = "Modify",
+                    Message = "Cannot decrease quantity of backordered inventory item"
+                },
+                Failures.HoldBackordered => new
+                {
+                    FailureType = FailureTypes.InvalidState,
+                    CurrentState = currentState.ToString(),
+                    Operation = "Hold",
+                    Message = "Cannot hold backordered inventory item"
+                },
+                _ => throw new ArgumentOutOfRangeException(nameof(failure), failure, null)
+            };
+        }
+    }
 
     private static void ConfigureEvent<TMessage>(IEventCorrelationConfigurator<InventoryEntity, TMessage> conf)
         where TMessage : class, InventoryCommand

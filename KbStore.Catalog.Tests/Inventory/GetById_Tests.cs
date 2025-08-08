@@ -2,13 +2,16 @@
 
 using Abstractions.Contracts;
 using KbStore.Catalog.Abstractions.Exceptions;
+using KbStore.Catalog.Services;
 using KbStore.Catalog.Tests;
 using NUnit.Framework;
 using Shouldly;
 
 
-public abstract class GetById_Tests : CatalogDomain_Tests
+public abstract class GetById_Tests : InventoryService_Tests<MassTransitInventoryCommandService>
 {
+    protected InventoryModel? Result = null!;
+
     protected override void Arrange() { }
 
     protected override async Task Act()
@@ -55,10 +58,6 @@ public abstract class GetById_Tests : CatalogDomain_Tests
         [Test]
         public void It_should_have_valid_updated_on_timestamp()
             => Result!.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
-
-        [Test]
-        public async Task It_should_consume_get_request()
-            => (await Harness!.Consumed.Any<InventoryStatusRequest>()).ShouldBeTrue();
     }
 
     public class When_instance_is_missing : GetById_Tests
@@ -78,9 +77,5 @@ public abstract class GetById_Tests : CatalogDomain_Tests
         [Test]
         public void It_should_have_correct_error_message()
             => LastException!.Message.ShouldContain("not found");
-
-        [Test]
-        public async Task It_should_consume_get_request()
-            => (await Harness!.Consumed.Any<InventoryStatusRequest>()).ShouldBeTrue();
     }
 }

@@ -2,13 +2,16 @@
 
 using Abstractions.Contracts;
 using Abstractions.Exceptions;
+using KbStore.Catalog.Services;
 using KbStore.Catalog.Tests;
 using NUnit.Framework;
 using Shouldly;
 
 
-public abstract class CreateAsync_Tests : CatalogDomain_Tests
+public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInventoryCommandService>
 {
+    protected InventoryModel? Result = null!;
+
     protected override void Arrange()
     {
         TestPartNumber = "TEST_PART_123";

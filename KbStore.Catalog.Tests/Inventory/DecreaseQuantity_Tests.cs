@@ -1,14 +1,13 @@
-﻿using KbStore.Catalog.Abstractions.Contracts;
-using KbStore.Catalog.Abstractions.Exceptions;
+﻿namespace KbStore.Catalog.Tests.Inventory;
+
+using Abstractions.Contracts;
+using Abstractions.Exceptions;
+using KbStore.Catalog.Services;
 using NUnit.Framework;
 using Shouldly;
 
-namespace KbStore.Catalog.Tests.Inventory;
 
-using Services;
-
-
-public abstract class IncreaseQuantity_Tests : InventoryService_Tests<MassTransitInventoryCommandService>
+public abstract class DecreaseQuantity_Tests : InventoryService_Tests<MassTransitInventoryCommandService>
 {
     protected InventoryModel? Result = null!;
 
@@ -19,12 +18,13 @@ public abstract class IncreaseQuantity_Tests : InventoryService_Tests<MassTransi
 
     protected override async Task Act()
     {
-        await CreateExistingInventory(quantity: 50);
+        await CreateExistingInventory(quantity:50);
 
-        Result ??= await Subject.IncreaseQuantityAsync(TestId, TestQuantity);
+        Now = Later;
+        Result ??= await Subject.DecreaseQuantityAsync(TestId, TestQuantity);
     }
 
-    public class When_increasing_successfully : IncreaseQuantity_Tests
+    public class When_decreasing_successfully : DecreaseQuantity_Tests
     {
         [Test]
         public void It_should_not_throw()
@@ -40,7 +40,7 @@ public abstract class IncreaseQuantity_Tests : InventoryService_Tests<MassTransi
 
         [Test]
         public void It_should_have_correct_quantity()
-            => Result!.StockQuantity.ShouldBe(60); // Assuming initial quantity was 50
+            => Result!.StockQuantity.ShouldBe(40); // Assuming initial quantity was 50
 
         [Test]
         public void It_should_have_updated_on_timestamp()
@@ -48,14 +48,14 @@ public abstract class IncreaseQuantity_Tests : InventoryService_Tests<MassTransi
 
         [Test]
         public void It_should_have_unchanged_created_on_timestamp()
-            => Result!.CreatedOn.ShouldBe(Now);
+            => Result!.CreatedOn.ShouldBe(InitialCreatedOn);
 
         [Test]
-        public async Task It_should_publish_inventory_quantity_increased_event()
-            => (await Harness!.Published.Any<InventoryQuantityIncreased>()).ShouldBeTrue();
+        public async Task It_should_publish_inventory_quantity_decreased_event()
+            => (await Harness!.Published.Any<InventoryQuantityDecreased>()).ShouldBeTrue();
     }
 
-    public class When_quantity_is_invalid : IncreaseQuantity_Tests
+    public class When_quantity_is_invalid : DecreaseQuantity_Tests
     {
         protected override void Arrange()
         {
@@ -71,9 +71,9 @@ public abstract class IncreaseQuantity_Tests : InventoryService_Tests<MassTransi
         [Test]
         public void It_should_have_correct_error_message()
             => LastException!.Message.ShouldContain("Quantity");
-
+        
         [Test]
-        public async Task It_should_not_publish_inventory_quantity_increased_event()
-            => (await Harness!.Published.Any<InventoryQuantityIncreased>()).ShouldBeFalse();
+        public async Task It_should_not_publish_inventory_quantity_decreased_event()
+            => (await Harness!.Published.Any<InventoryQuantityDecreased>()).ShouldBeFalse();
     }
 }

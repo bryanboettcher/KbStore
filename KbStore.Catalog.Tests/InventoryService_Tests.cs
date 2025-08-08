@@ -1,6 +1,5 @@
 ﻿namespace KbStore.Catalog.Tests;
 
-using Abstractions.Contracts;
 using Domains.Inventory;
 using Services;
 using KbStore.Tests;
@@ -11,17 +10,19 @@ using NUnit.Framework;
 
 
 [TestFixture]
-public abstract class CatalogDomain_Tests : TestBase
+public abstract class InventoryService_Tests<TService> : TestBase
+    where TService : class
 {
     protected ISagaStateMachineTestHarness<InventoryStateMachine, InventoryEntity>? SagaHarness;
-    protected InventoryModel? Result = null!;
-    protected MassTransitInventoryCommandService Subject = null!;
+    protected TService Subject = null!;
 
     protected Guid TestId;
     protected string? TestPartNumber;
     protected string? TestDescription;
     protected int TestQuantity;
-    protected DateTimeOffset Now = DateTimeOffset.Now;
+    protected DateTimeOffset Now = new(2025, 08, 01, 15, 55, 18, TimeSpan.Zero);
+    protected DateTimeOffset Later = new(2025, 08, 01, 16, 55, 18, TimeSpan.Zero);
+    protected DateTimeOffset InitialCreatedOn = new(2025, 08, 01, 15, 55, 18, TimeSpan.Zero);
 
     protected override void OnServicesCreating(IServiceCollection services)
     {
@@ -38,7 +39,7 @@ public abstract class CatalogDomain_Tests : TestBase
 
     protected override Task OnPostSetup()
     {
-        Subject = ScopedProvider.ServiceProvider.GetRequiredService<MassTransitInventoryCommandService>();
+        Subject = ScopedProvider.ServiceProvider.GetRequiredService<TService>();
         SagaHarness = Harness!.GetSagaStateMachineHarness<InventoryStateMachine, InventoryEntity>();
 
         return Task.CompletedTask;
@@ -50,10 +51,13 @@ public abstract class CatalogDomain_Tests : TestBase
         int quantity = 50
     )
     {
+        if (Subject is not MassTransitInventoryCommandService service)
+            return;
+
         if (TestId != Guid.Empty)
             return;
 
-        var result = await Subject.CreateAsync(partNumber, description, quantity);
+        var result = await service.CreateAsync(partNumber, description, quantity);
         await SagaHarness!.Created.Any();
 
         TestId = result.InventoryId;
