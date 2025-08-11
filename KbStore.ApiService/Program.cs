@@ -1,6 +1,7 @@
 namespace KbStore.ApiService;
 
 using Endpoints;
+using Extensions;
 using Scalar.AspNetCore;
 using ServiceDefaults;
 
@@ -13,10 +14,11 @@ public class Program
 
         // Add service defaults & Aspire client integrations.
         builder.AddServiceDefaults();
+        builder.AddApplicationServices();
 
         // Add services to the container.
         builder.Services.AddProblemDetails();
-
+        
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
         

@@ -35,7 +35,7 @@ public class Program
             .WithPgWeb(conf => conf.WithHostPort(5050));
 
         var database = pgsql
-            .AddDatabase("inventory");
+            .AddDatabase("catalog");
 
         builder.AddProject<KbStore_Catalog>("domain-catalog")
             .WithReference(broker).WithParentRelationship(broker)

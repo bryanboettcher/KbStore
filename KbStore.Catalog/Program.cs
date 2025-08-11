@@ -1,4 +1,3 @@
-
 namespace KbStore.Catalog;
 
 using Extensions;

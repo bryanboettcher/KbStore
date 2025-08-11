@@ -12,12 +12,12 @@ using MassTransit;
 /// </summary>
 public class MassTransitInventoryCommandService : IInventoryCommandService
 {
-    private readonly IBus _bus;
+    private readonly IClientFactory _clientFactory;
     private readonly Func<DateTimeOffset> _now;
 
-    public MassTransitInventoryCommandService(IBus bus, Func<DateTimeOffset> now)
+    public MassTransitInventoryCommandService(IClientFactory clientFactory, Func<DateTimeOffset> now)
     {
-        _bus = bus ?? throw new ArgumentNullException(nameof(bus));
+        _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
         _now = now ?? throw new ArgumentNullException(nameof(now));
     }
 
@@ -36,7 +36,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         if (stockQuantity < 0)
             throw new InventoryValidationException("StockQuantity must be a positive value");
 
-        var client = _bus.CreateRequestClient<CreateInventoryRequest>();
+        var client = _clientFactory.CreateRequestClient<CreateInventoryRequest>();
 
         try
         {
@@ -64,7 +64,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         if (quantity <= 0)
             throw new InventoryValidationException("Quantity can only be increased by a positive whole number");
 
-        var client = _bus.CreateRequestClient<IncreaseInventoryQuantityRequest>();
+        var client = _clientFactory.CreateRequestClient<IncreaseInventoryQuantityRequest>();
 
         try
         {
@@ -91,7 +91,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         if (quantity <= 0)
             throw new InventoryValidationException("Quantity can only be decreased by a positive whole number");
 
-        var client = _bus.CreateRequestClient<DecreaseInventoryQuantityRequest>();
+        var client = _clientFactory.CreateRequestClient<DecreaseInventoryQuantityRequest>();
 
         try
         {
@@ -121,7 +121,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         if (string.IsNullOrEmpty(description))
             throw new InventoryValidationException("Description cannot be empty");
 
-        var client = _bus.CreateRequestClient<UpdateInventoryDescriptionRequest>();
+        var client = _clientFactory.CreateRequestClient<UpdateInventoryDescriptionRequest>();
 
         try
         {
@@ -147,7 +147,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         if (inventoryId == Guid.Empty)
             throw new ArgumentException("InventoryId must be set", nameof(inventoryId));
 
-        var client = _bus.CreateRequestClient<HoldInventoryRequest>();
+        var client = _clientFactory.CreateRequestClient<HoldInventoryRequest>();
 
         try
         {
@@ -172,7 +172,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         if (inventoryId == Guid.Empty)
             throw new ArgumentException("InventoryId must be set", nameof(inventoryId));
 
-        var client = _bus.CreateRequestClient<ReleaseInventoryRequest>();
+        var client = _clientFactory.CreateRequestClient<ReleaseInventoryRequest>();
 
         try
         {
@@ -197,7 +197,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         if (inventoryId == Guid.Empty)
             throw new ArgumentException("InventoryId must be set", nameof(inventoryId));
 
-        var client = _bus.CreateRequestClient<DeleteInventoryRequest>();
+        var client = _clientFactory.CreateRequestClient<DeleteInventoryRequest>();
 
         try
         {
@@ -220,7 +220,7 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
         if (inventoryId == Guid.Empty)
             throw new ArgumentException("InventoryId must be set", nameof(inventoryId));
 
-        var client = _bus.CreateRequestClient<InventoryStatusRequest>();
+        var client = _clientFactory.CreateRequestClient<InventoryStatusRequest>();
 
         try
         {
