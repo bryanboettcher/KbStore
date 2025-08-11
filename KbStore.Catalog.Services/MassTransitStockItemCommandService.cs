@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Abstractions.Contracts;
 using Abstractions.Exceptions;
 using Abstractions.Services;
+using Extensions;
 using KbStore.Abstractions;
 using MassTransit;
 
@@ -38,21 +39,23 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
             throw new InventoryValidationException("StockQuantity must be a positive value");
 
         var client = _bus.CreateRequestClient<CreateInventoryRequest>();
-        
-        Response response = await client.GetResponse<CreateInventoryResponse, InventoryFailure>(new
-        {
-            PartNumber = partNumber,
-            Description = description,
-            StockQuantity = stockQuantity,
-            Timestamp = _now()
-        }, cancellationToken).ConfigureAwait(false);
 
-        return response switch
+        try
         {
-            (_, CreateInventoryResponse success) => success,
-            (_, InventoryFailure failure) => throw MapFailureToException(failure),
-            _ => throw new InvalidOperationException("Unexpected response type from backend")
-        };
+            var response = await client.GetResponse<CreateInventoryResponse>(new
+            {
+                PartNumber = partNumber,
+                Description = description,
+                StockQuantity = stockQuantity,
+                Timestamp = _now()
+            }, cancellationToken).ConfigureAwait(false);
+
+            return response.Message;
+        }
+        catch (RequestFaultException e)
+        {
+            throw e.ToInventoryException();
+        }
     }
 
     public async Task<InventoryModel> IncreaseQuantityAsync(Guid inventoryId, int quantity, CancellationToken cancellationToken = default)
@@ -65,19 +68,21 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         var client = _bus.CreateRequestClient<IncreaseInventoryQuantityRequest>();
 
-        Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
+        try
         {
-            InventoryId = inventoryId,
-            Amount = quantity,
-            Timestamp = _now()
-        }, cancellationToken).ConfigureAwait(false);
+            var response = await client.GetResponse<UpdateInventoryResponse>(new
+            {
+                InventoryId = inventoryId,
+                Amount = quantity,
+                Timestamp = _now()
+            }, cancellationToken).ConfigureAwait(false);
 
-        return response switch
+            return response.Message;
+        }
+        catch (RequestFaultException e)
         {
-            (_, UpdateInventoryResponse success) => success,
-            (_, InventoryFailure failure) => throw MapFailureToException(failure, inventoryId),
-            _ => throw new InvalidOperationException("Unexpected response type from backend")
-        };
+            throw e.ToInventoryException();
+        }
     }
 
     public async Task<InventoryModel> DecreaseQuantityAsync(Guid inventoryId, int quantity, CancellationToken cancellationToken = default)
@@ -90,19 +95,21 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         var client = _bus.CreateRequestClient<DecreaseInventoryQuantityRequest>();
 
-        Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
+        try
         {
-            InventoryId = inventoryId,
-            Amount = quantity,
-            Timestamp = _now()
-        }, cancellationToken).ConfigureAwait(false);
+            var response = await client.GetResponse<UpdateInventoryResponse>(new
+            {
+                InventoryId = inventoryId,
+                Amount = quantity,
+                Timestamp = _now()
+            }, cancellationToken).ConfigureAwait(false);
 
-        return response switch
+            return response.Message;
+        } 
+        catch (RequestFaultException e)
         {
-            (_, UpdateInventoryResponse success) => success,
-            (_, InventoryFailure failure) => throw MapFailureToException(failure, inventoryId),
-            _ => throw new InvalidOperationException("Unexpected response type from backend")
-        };
+            throw e.ToInventoryException();
+        }
     }
     
     public async Task<InventoryModel> UpdateDescriptionAsync(
@@ -118,19 +125,21 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         var client = _bus.CreateRequestClient<UpdateInventoryDescriptionRequest>();
 
-        Response response = await client.GetResponse<UpdateInventoryResponse, InventoryFailure>(new
+        try
         {
-            InventoryId = inventoryId,
-            Description = description,
-            Timestamp = _now()
-        }, cancellationToken).ConfigureAwait(false);
+            var response = await client.GetResponse<UpdateInventoryResponse>(new
+            {
+                InventoryId = inventoryId,
+                Description = description,
+                Timestamp = _now()
+            }, cancellationToken).ConfigureAwait(false);
 
-        return response switch
+            return response.Message;
+        }
+        catch (RequestFaultException e)
         {
-            (_, UpdateInventoryResponse success) => success,
-            (_, InventoryFailure failure) => throw MapFailureToException(failure, inventoryId),
-            _ => throw new InvalidOperationException("Unexpected response type from backend")
-        };
+            throw e.ToInventoryException();
+        }
     }
 
     public async Task<InventoryModel> HoldAsync(
@@ -142,18 +151,20 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         var client = _bus.CreateRequestClient<HoldInventoryRequest>();
 
-        Response response = await client.GetResponse<HoldInventoryResponse, InventoryFailure>(new
+        try
         {
-            InventoryId = inventoryId,
-            Timestamp = _now()
-        }, cancellationToken).ConfigureAwait(false);
+            var response = await client.GetResponse<HoldInventoryResponse>(new
+            {
+                InventoryId = inventoryId,
+                Timestamp = _now()
+            }, cancellationToken).ConfigureAwait(false);
 
-        return response switch
+            return response.Message;
+        }
+        catch (RequestFaultException e)
         {
-            (_, HoldInventoryResponse success) => success,
-            (_, InventoryFailure failure) => throw MapFailureToException(failure, inventoryId),
-            _ => throw new InvalidOperationException("Unexpected response type from backend")
-        };
+            throw e.ToInventoryException();
+        }
     }
 
     public async Task<InventoryModel> ReleaseAsync(
@@ -165,18 +176,20 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         var client = _bus.CreateRequestClient<ReleaseInventoryRequest>();
 
-        Response response = await client.GetResponse<ReleaseInventoryResponse, InventoryFailure>(new
+        try
         {
-            InventoryId = inventoryId,
-            Timestamp = _now()
-        }, cancellationToken).ConfigureAwait(false);
+            var response = await client.GetResponse<ReleaseInventoryResponse>(new
+            {
+                InventoryId = inventoryId,
+                Timestamp = _now()
+            }, cancellationToken).ConfigureAwait(false);
 
-        return response switch
+            return response.Message;
+        }
+        catch (RequestFaultException e)
         {
-            (_, ReleaseInventoryResponse success) => success,
-            (_, InventoryFailure failure) => throw MapFailureToException(failure, inventoryId),
-            _ => throw new InvalidOperationException("Unexpected response type from backend")
-        };
+            throw e.ToInventoryException();
+        }
     }
 
     public async Task<InventoryModel> DeleteAsync(
@@ -188,18 +201,20 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         var client = _bus.CreateRequestClient<DeleteInventoryRequest>();
 
-        Response response = await client.GetResponse<DeleteInventoryResponse, InventoryFailure>(new
+        try
         {
-            InventoryId = inventoryId,
-            Timestamp = _now()
-        }, cancellationToken).ConfigureAwait(false);
+            var response = await client.GetResponse<DeleteInventoryResponse>(new
+            {
+                InventoryId = inventoryId,
+                Timestamp = _now()
+            }, cancellationToken).ConfigureAwait(false);
 
-        return response switch
+            return response.Message;
+        }
+        catch (RequestFaultException e)
         {
-            (_, DeleteInventoryResponse success) => success,
-            (_, InventoryFailure failure) => throw MapFailureToException(failure, inventoryId),
-            _ => throw new InvalidOperationException("Unexpected response type from backend")
-        };
+            throw e.ToInventoryException();
+        }
     }
 
     public async Task<InventoryModel> GetAsync(Guid inventoryId, CancellationToken cancellationToken = default)
@@ -209,36 +224,19 @@ public class MassTransitInventoryCommandService : IInventoryCommandService
 
         var client = _bus.CreateRequestClient<InventoryStatusRequest>();
 
-        Response response = await client.GetResponse<InventoryStatusResponse, InventoryFailure>(new
+        try
         {
-            InventoryId = inventoryId,
-            Timestamp = _now()
-        }, cancellationToken).ConfigureAwait(false);
+            var response = await client.GetResponse<InventoryStatusResponse>(new
+            {
+                InventoryId = inventoryId,
+                Timestamp = _now()
+            }, cancellationToken).ConfigureAwait(false);
 
-        return response switch
+            return response.Message;
+        }
+        catch (RequestFaultException e)
         {
-            (_, InventoryStatusResponse success) => success,
-            (_, InventoryFailure failure) => throw MapFailureToException(failure, inventoryId),
-            _ => throw new InvalidOperationException("Unexpected response type from backend")
-        };
-    }
-
-    /// <summary>
-    /// Maps InventoryFailure responses to appropriate domain exceptions.
-    /// </summary>
-    private static Exception MapFailureToException(InventoryFailure failure, Guid? inventoryId = null)
-    {
-        var message = failure.Message ?? "Unknown error";
-
-        return failure.FailureType switch
-        {
-            FailureTypes.Missing => new InventoryNotFoundException(inventoryId ?? Guid.Empty),
-            FailureTypes.Conflict => new InventoryConflictException(message),
-            FailureTypes.Validation => new InventoryValidationException(message),
-            FailureTypes.InvalidState => new InventoryStateException(inventoryId ?? Guid.Empty, failure.CurrentState ?? "Unknown", failure.Operation ?? "Unknown"),
-            FailureTypes.Forbidden => new InventoryStateException(inventoryId ?? Guid.Empty, failure.CurrentState ?? "Unknown", failure.Operation ?? "Unknown"),
-            FailureTypes.InternalError => new InventoryException($"Internal error: {message}"),
-            _ => new InventoryException($"Unmapped failure type '{failure.FailureType}': {message}")
-        };
+            throw e.ToInventoryException();
+        }
     }
 }
