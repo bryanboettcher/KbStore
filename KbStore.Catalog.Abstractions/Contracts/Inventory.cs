@@ -92,6 +92,10 @@ public interface InventoryDeleted : BaseInventoryEvent;
 #endregion
 
 #region Validation
-public interface InventoryStatusRequest : InventoryCommand;
+
+public interface InventoryStatusRequest
+{
+    Guid InventoryId { get; }
+};
 public interface InventoryStatusResponse : InventoryModel;
 #endregion

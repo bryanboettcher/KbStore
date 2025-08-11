@@ -17,12 +17,13 @@ public static class RequestFaultExceptionExtensions
         var message = fault.Message ?? "Unknown error";
         var data = fault.Data ?? new Dictionary<string, object>();
 
-        return fault.ExceptionType switch
+        var typeName = fault.ExceptionType?.Split('.').LastOrDefault() ?? "";
+        return typeName switch
         {
             nameof(InventoryNotFoundException) => RecreateNotFoundException(message, data),
             nameof(InventoryConflictException) => RecreateConflictException(message, data),
-            nameof(InventoryValidationException) => new InventoryValidationException(message),
             nameof(InventoryStateException) => RecreateStateException(message, data),
+            nameof(InventoryValidationException) => new InventoryValidationException(message),
             _ => new GenericInventoryException(message)
         };
     }
@@ -44,8 +45,8 @@ public static class RequestFaultExceptionExtensions
     private static InventoryStateException RecreateStateException(string message, IDictionary<string, object> data)
     {
         var inventoryId = data.TryGetValue("inventoryId", out var idObj) && idObj is Guid id ? id : Guid.Empty;
-        var currentState = data.TryGetValue("currentState", out var stateObj) ? stateObj?.ToString() : "Unknown";
-        var operation = data.TryGetValue("attemptedOperation", out var opObj) ? opObj?.ToString() : "Unknown";
+        var currentState = (data.TryGetValue("currentState", out var stateObj) ? stateObj?.ToString() : null) ?? "Unknown";
+        var operation = (data.TryGetValue("attemptedOperation", out var opObj) ? opObj?.ToString() : null) ?? "Unknown";
 
         return new InventoryStateException(inventoryId, currentState, operation);
     }

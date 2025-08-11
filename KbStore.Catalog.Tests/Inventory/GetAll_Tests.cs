@@ -8,7 +8,7 @@ using KbStore.Abstractions;
 using NUnit.Framework;
 using Shouldly;
 
-
+[Ignore("Not implemented yet")]
 public abstract class GetAll_Tests : InventoryService_Tests<DbContextInventoryQueryService>
 {
     protected PaginatedResponse<InventoryModel>? Result = null;

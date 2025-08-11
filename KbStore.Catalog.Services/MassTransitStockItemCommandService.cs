@@ -1,11 +1,9 @@
 ﻿namespace KbStore.Catalog.Services;
 
-using System.Diagnostics;
 using Abstractions.Contracts;
 using Abstractions.Exceptions;
 using Abstractions.Services;
 using Extensions;
-using KbStore.Abstractions;
 using MassTransit;
 
 
