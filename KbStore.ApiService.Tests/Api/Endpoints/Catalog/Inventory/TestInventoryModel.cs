@@ -1,4 +1,4 @@
-﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Catalog;
+﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Catalog.Inventory;
 
 using KbStore.Catalog.Abstractions.Contracts;
 

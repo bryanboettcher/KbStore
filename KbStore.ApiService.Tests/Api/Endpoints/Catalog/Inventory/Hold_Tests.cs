@@ -1,6 +1,7 @@
-﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Catalog;
+﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Catalog.Inventory;
 
 using ApiService.Endpoints.Catalog;
+using KbStore.ApiService.Tests.Api.Endpoints.Catalog;
 using KbStore.Catalog.Abstractions.Contracts;
 using KbStore.Catalog.Abstractions.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -10,16 +11,16 @@ using NUnit.Framework;
 using Shouldly;
 
 
-public abstract class Release_Tests : InventoryEndpoints_Tests
+public abstract class Hold_Tests : InventoryEndpoints_Tests
 {
     protected static readonly Guid TestId = Guid.NewGuid();
 
-    public class When_releasing_successfully : Release_Tests
+    public class When_holding_successfully : Hold_Tests
     {
         protected override void Arrange()
         {
             MockOf<IInventoryCommandService>()
-                .ReleaseAsync(TestId, Arg.Any<CancellationToken>())
+                .HoldAsync(TestId, Arg.Any<CancellationToken>())
                 .Returns(new TestInventoryModel
                 {
                     InventoryId = TestId,
@@ -30,7 +31,7 @@ public abstract class Release_Tests : InventoryEndpoints_Tests
                 });
         }
         protected override async Task Act()
-            => Output = await Execute(InventoryEndpoints.Release, TestId);
+            => Output = await Execute(InventoryEndpoints.Hold, TestId);
 
         [Test]
         public void It_should_return_something() => Output.ShouldNotBeNull();
@@ -42,17 +43,17 @@ public abstract class Release_Tests : InventoryEndpoints_Tests
         public void It_should_be_successful() => Output.ShouldBeOfType<Ok<InventoryModel>>();
     }
 
-    public class When_service_throws_exception : Release_Tests
+    public class When_service_throws_exception : Hold_Tests
     {
         protected override void Arrange()
         {
             MockOf<IInventoryCommandService>()
-                .ReleaseAsync(TestId, Arg.Any<CancellationToken>())
+                .HoldAsync(TestId, Arg.Any<CancellationToken>())
                 .Throws(new TestInventoryException("Test error"));
         }
 
         protected override async Task Act()
-            => Output = await Execute(InventoryEndpoints.Release, TestId);
+            => Output = await Execute(InventoryEndpoints.Hold, TestId);
 
         [Test]
         public void It_should_throw() => LastException.ShouldBeOfType<TestInventoryException>();

@@ -1,6 +1,7 @@
-﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Catalog;
+﻿namespace KbStore.ApiService.Tests.Api.Endpoints.Catalog.Inventory;
 
 using ApiService.Endpoints.Catalog;
+using KbStore.ApiService.Tests.Api.Endpoints.Catalog;
 using KbStore.Catalog.Abstractions.Contracts;
 using KbStore.Catalog.Abstractions.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
