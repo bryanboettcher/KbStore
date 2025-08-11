@@ -30,6 +30,7 @@ public struct ProductDimensions
 public interface ProductCommand
 {
     Guid ProductId { get; }
+    DateTimeOffset Timestamp { get; }
 }
 
 public interface ProductModel

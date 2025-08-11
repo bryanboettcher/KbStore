@@ -6,7 +6,7 @@ using MassTransit;
 /// <summary>
 /// Extension methods for converting MassTransit RequestFaultException to domain-specific inventory exceptions.
 /// </summary>
-public static class RequestFaultExceptionExtensions
+public static class InventoryRequestFaultExceptionExtensions
 {
     public static InventoryException ToInventoryException(this RequestFaultException faultException)
     {

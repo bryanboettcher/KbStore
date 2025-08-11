@@ -19,9 +19,17 @@ public class ProductEntity : SagaStateMachineInstance
     public int Quantity { get; set; }
     public decimal Price { get; set; }
     public decimal? Weight { get; set; }
-    public float? Height { get; set; }
-    public float? Width { get; set; }
-    public float? Depth { get; set; }
+    public decimal? Height { get; set; }
+    public decimal? Width { get; set; }
+    public decimal? Depth { get; set; }
+
+    public Guid? InventoryId { get; set; }
+    public int? StockThreshold { get; set; }
+    public TimeSpan? LeadTime { get; set; }
+    public bool IsStocked { get; set; } = true;
+
+    public DateTimeOffset CreatedOn { get; set; }
+    public DateTimeOffset UpdatedOn { get; set; }
 
     public InventoryEntity? Inventory { get; set; }
 }

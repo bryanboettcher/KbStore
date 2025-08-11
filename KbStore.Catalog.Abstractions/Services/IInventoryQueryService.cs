@@ -26,3 +26,13 @@ public class PaginatedQuery
     public int Page { get; init; } = 0;
     public int Size { get; init; } = 25;
 }
+
+
+/// <summary>
+/// Basic pagination query for products.
+/// </summary>
+public class ProductPaginatedQuery
+{
+    public int Page { get; init; } = 0;
+    public int Size { get; init; } = 25;
+}
