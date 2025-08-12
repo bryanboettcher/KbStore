@@ -1,5 +1,6 @@
 ﻿namespace KbStore.Catalog.Domains.Inventory;
 
+using Abstractions.Contracts;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -16,6 +17,14 @@ public sealed class InventoryEntity : SagaStateMachineInstance
     public int StockQuantity { get; set; }
     public DateTimeOffset CreatedOn { get; set; }
     public DateTimeOffset UpdatedOn { get; set; }
+    public InventoryStatus Status => CurrentState switch
+    {
+        3 => InventoryStatus.Available,    // Available state
+        4 => InventoryStatus.Held,         // OnHold state  
+        5 => InventoryStatus.Backordered,  // Backordered state
+        6 => InventoryStatus.Discontinued, // Discontinued state
+        _ => InventoryStatus.Invalid
+    };
 }
 
 

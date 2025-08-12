@@ -18,7 +18,7 @@ public interface IProductCommandService
         string sku,
         string? name,
         ProductDimensions? dimensions,
-        Guid? inventoryItemId,
+        Guid? inventoryId,
         int? stockThreshold,
         TimeSpan? leadTime,
         CancellationToken cancellationToken = default);

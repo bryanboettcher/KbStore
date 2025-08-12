@@ -69,8 +69,10 @@ public interface UpdateInventoryDescriptionRequest : InventoryCommand
 }
 
 public interface UpdateInventoryResponse : InventoryModel;
-public interface InventoryQuantityIncreased : InventoryUpdated;
-public interface InventoryQuantityDecreased : InventoryUpdated;
+
+public interface InventoryQuantityChanged : InventoryUpdated;
+public interface InventoryQuantityIncreased : InventoryQuantityChanged;
+public interface InventoryQuantityDecreased : InventoryQuantityChanged;
 public interface InventoryDescriptionUpdated : InventoryUpdated;
 #endregion
 

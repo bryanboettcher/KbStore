@@ -1,5 +1,5 @@
 ﻿// ReSharper disable UnassignedGetOnlyAutoProperty
-#pragma warning disable CS8618, CS9264
+#pragma warning disable CS8618, CS9264, CS8602
 
 namespace KbStore.Catalog.Domains.Products;
 
@@ -17,6 +17,8 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             Discontinued
         );
 
+        Request(() => InventoryStatus, s => s.InventoryStatusId);
+
         Event(() => Created, e => e.CorrelateBy((s, c) => s.Sku == c.Message.Sku).SelectId(_ => NewId.NextSequentialGuid()));
         Event(() => StatusRequested, e => e.CorrelateById(c => c.Message.ProductId).OnMissingInstance(b => b.Execute(c => throw new ProductNotFoundException(c.Message.ProductId))));
 
@@ -27,7 +29,8 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
         Event(() => EnableRequested, ConfigureEvent);
         Event(() => DisableRequested, ConfigureEvent);
         Event(() => Deleted, ConfigureEvent);
-        Event(() => AvailabilityChanged, ConfigureEvent);
+
+        Event(() => InventoryQuantityChanged, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
 
         Initially(
             When(Created, context => string.IsNullOrWhiteSpace(context.Message.Sku))
@@ -35,10 +38,25 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
 
             When(Created)
                 .Then(SetProperties)
-                .TransitionTo(Enabled)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<CreateProductResponse>)
-                .PublishAsync(Message<ProductCreated>)
+                .IfElse(ctx => ctx.Saga.InventoryId is not null,
+                    
+                    t => t.Request(InventoryStatus, c => c.Init<InventoryStatusRequest>(new { c.Message.InventoryId }))
+                        .TransitionTo(InventoryStatus.Pending),
+
+                    f => f.TransitionTo(Enabled)
+                        .PublishAsync(Message<ProductCreated>)
+                )
+                .RespondAsync(Message<CreateProductResponse>)
+        );
+
+        During(InventoryStatus.Pending,
+            When(InventoryStatus.Completed)
+                .TransitionTo(Enabled)
+                .PublishAsync(Message<ProductCreated>),
+
+            When(InventoryStatus.Faulted)
+                .TransitionTo(Disabled)
         );
 
         During(Enabled,
@@ -49,31 +67,36 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             When(NameUpdated)
                 .Then(context => context.Saga.Name = context.Message.Name)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateProductResponse>)
+                .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductNameUpdated>),
 
             When(DimensionsUpdated)
                 .Then(context => UpdateDimensions(context.Saga, context.Message.Dimensions))
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateProductResponse>)
+                .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductDimensionsUpdated>),
 
             When(StockThresholdUpdated)
                 .Then(context => context.Saga.StockThreshold = context.Message.StockThreshold)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateProductResponse>)
+                .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductStockThresholdUpdated>),
+
+            When(InventoryQuantityChanged)
+                .If(AvailabilityChanged, 
+                    b => b.PublishAsync(Message<ProductAvailabilityChanged>)
+                ),
 
             When(LeadTimeUpdated)
                 .Then(context => context.Saga.LeadTime = context.Message.LeadTime)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateProductResponse>)
+                .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductLeadTimeUpdated>),
 
             When(DisableRequested)
                 .TransitionTo(Disabled)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<DisableProductResponse>)
+                .RespondAsync(Message<DisableProductResponse>)
                 .PublishAsync(Message<ProductDisabled>),
 
             When(EnableRequested)
@@ -82,47 +105,39 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             When(Deleted)
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<DeleteProductResponse>)
-                .PublishAsync(Message<ProductDiscontinued>),
-
-            When(AvailabilityChanged)
-                .Then(context => context.Saga.IsStocked = context.Message.IsStocked)
-                .Then(UpdateTimestamp)
-                .PublishAsync(Message<ProductAvailabilityChanged>),
-
-            When(StatusRequested)
-                .RespondAsync(Response<ProductStatusResponse>)
+                .RespondAsync(Message<DeleteProductResponse>)
+                .PublishAsync(Message<ProductDiscontinued>)
         );
 
         During(Disabled,
             When(NameUpdated)
                 .Then(context => context.Saga.Name = context.Message.Name)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateProductResponse>)
+                .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductNameUpdated>),
 
             When(DimensionsUpdated)
                 .Then(context => UpdateDimensions(context.Saga, context.Message.Dimensions))
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateProductResponse>)
+                .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductDimensionsUpdated>),
 
             When(StockThresholdUpdated)
                 .Then(context => context.Saga.StockThreshold = context.Message.StockThreshold)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateProductResponse>)
+                .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductStockThresholdUpdated>),
 
             When(LeadTimeUpdated)
                 .Then(context => context.Saga.LeadTime = context.Message.LeadTime)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateProductResponse>)
+                .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductLeadTimeUpdated>),
 
             When(EnableRequested)
                 .TransitionTo(Enabled)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<EnableProductResponse>)
+                .RespondAsync(Message<EnableProductResponse>)
                 .PublishAsync(Message<ProductEnabled>),
 
             When(DisableRequested)
@@ -131,25 +146,15 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             When(Deleted)
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<DeleteProductResponse>)
-                .PublishAsync(Message<ProductDiscontinued>),
-
-            When(AvailabilityChanged)
-                .Then(context => context.Saga.IsStocked = context.Message.IsStocked)
-                .Then(UpdateTimestamp)
-                .PublishAsync(Message<ProductAvailabilityChanged>),
-
-            When(StatusRequested)
-                .RespondAsync(Response<ProductStatusResponse>)
+                .RespondAsync(Message<DeleteProductResponse>)
+                .PublishAsync(Message<ProductDiscontinued>)
         );
 
         During(Discontinued,
-            When(StatusRequested)
-                .RespondAsync(Response<ProductStatusResponse>),
-
+            
             When(Deleted)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<DeleteProductResponse>)
+                .RespondAsync(Message<DeleteProductResponse>)
                 .PublishAsync(Message<ProductDeleted>)
                 .Finalize(),
 
@@ -170,10 +175,12 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .Then(context => throw ProductStateException.CannotModifyDiscontinuedProduct(context.Saga.CorrelationId, "Enable")),
 
             When(DisableRequested)
-                .Then(context => throw ProductStateException.CannotModifyDiscontinuedProduct(context.Saga.CorrelationId, "Disable")),
+                .Then(context => throw ProductStateException.CannotModifyDiscontinuedProduct(context.Saga.CorrelationId, "Disable"))
+        );
 
-            When(AvailabilityChanged)
-                .Then(context => throw ProductStateException.CannotModifyDiscontinuedProduct(context.Saga.CorrelationId, "AvailabilityChanged"))
+        DuringAny(
+            When(StatusRequested)
+                .RespondAsync(Message<ProductStatusResponse>)
         );
     }
 
@@ -185,8 +192,12 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
     public Event<EnableProductRequest> EnableRequested { get; }
     public Event<DisableProductRequest> DisableRequested { get; }
     public Event<DeleteProductRequest> Deleted { get; }
+    
     public Event<ProductStatusRequest> StatusRequested { get; }
-    public Event<ProductAvailabilityChangedInternal> AvailabilityChanged { get; }
+
+    public Event<InventoryQuantityChanged> InventoryQuantityChanged { get; }
+    
+    public Request<ProductEntity, InventoryStatusRequest, InventoryStatusResponse> InventoryStatus { get; }
 
     public State Enabled { get; }
     public State Disabled { get; }
@@ -196,11 +207,10 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
     {
         context.Saga.Sku = context.Message.Sku;
         context.Saga.Name = context.Message.Name;
-        context.Saga.InventoryId = context.Message.InventoryItemId;
+        context.Saga.InventoryId = context.Message.InventoryId;
         context.Saga.StockThreshold = context.Message.StockThreshold;
         context.Saga.LeadTime = context.Message.LeadTime;
-        context.Saga.IsStocked = true; // Default for new products
-
+        
         UpdateDimensions(context.Saga, context.Message.Dimensions);
 
         context.Saga.CreatedOn = context.Message.Timestamp;
@@ -229,25 +239,18 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
         context.Saga.UpdatedOn = context.Message.Timestamp;
     }
 
-    private static Task<SendTuple<TMessage>> Message<TMessage>(BehaviorContext<ProductEntity> context)
-        where TMessage : class, BaseProductEvent
-        => context.Init<TMessage>(new
-        {
-            ProductId = context.Saga.CorrelationId,
-            context.Saga.Sku,
-            context.Saga.Name,
-            Dimensions = GetProductDimensions(context.Saga),
-            InventoryItemId = context.Saga.InventoryId,
-            context.Saga.StockThreshold,
-            LeadTime = context.Saga.LeadTime,
-            context.Saga.IsStocked,
-            IsEnabled = CalculateIsEnabled(context.Saga),
-            IsAvailable = context.Saga.IsStocked && CalculateIsEnabled(context.Saga),
-            context.Saga.CreatedOn,
-            context.Saga.UpdatedOn
-        });
+    private static bool AvailabilityChanged(BehaviorContext<ProductEntity, InventoryUpdated> context)
+    {
+        var originalStatus = context.Saga.IsStocked;
+        var requiredStock = context.Saga.StockThreshold ?? context.Saga.Quantity;
 
-    private static Task<SendTuple<TMessage>> Response<TMessage>(BehaviorContext<ProductEntity> context)
+        var updatedStatus = (context.Message.StockQuantity >= requiredStock);
+        context.Saga.IsStocked = updatedStatus;
+
+        return originalStatus != updatedStatus;
+    }
+
+    private static Task<SendTuple<TMessage>> Message<TMessage>(BehaviorContext<ProductEntity> context)
         where TMessage : class, ProductModel
         => context.Init<TMessage>(new
         {
@@ -257,10 +260,10 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             Dimensions = GetProductDimensions(context.Saga),
             InventoryItemId = context.Saga.InventoryId,
             context.Saga.StockThreshold,
-            LeadTime = context.Saga.LeadTime,
+            context.Saga.LeadTime,
             context.Saga.IsStocked,
-            IsEnabled = CalculateIsEnabled(context.Saga),
-            IsAvailable = context.Saga.IsStocked && CalculateIsEnabled(context.Saga),
+            context.Saga.IsEnabled,
+            context.Saga.IsAvailable,
             context.Saga.CreatedOn,
             context.Saga.UpdatedOn
         });
@@ -285,21 +288,4 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             Weight = entity.Weight
         };
     }
-
-    private static bool CalculateIsEnabled(ProductEntity entity)
-    {
-        return entity.CurrentState switch
-        {
-            3 => true,  // Enabled
-            4 => false, // Disabled
-            6 => false, // Discontinued
-            _ => false
-        };
-    }
-}
-
-// Internal event for system-generated availability changes
-public interface ProductAvailabilityChangedInternal : ProductCommand
-{
-    bool IsStocked { get; }
 }

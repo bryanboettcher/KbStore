@@ -62,7 +62,7 @@ public interface CreateProductRequest : ProductCommand
     string Sku { get; }
     string? Name { get; }
     ProductDimensions? Dimensions { get; }
-    Guid? InventoryItemId { get; }
+    Guid? InventoryId { get; }
     int? StockThreshold { get; }
     TimeSpan? LeadTime { get; }
 }

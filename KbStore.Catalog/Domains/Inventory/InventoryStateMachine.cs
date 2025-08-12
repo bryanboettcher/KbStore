@@ -44,7 +44,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
                 .Then(SetProperties)
                 .TransitionTo(Available)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<CreateInventoryResponse>)
+                .RespondAsync(Message<CreateInventoryResponse>)
                 .PublishAsync(Message<InventoryCreated>)
         );
 
@@ -56,7 +56,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             When(QuantityIncreased)
                 .Then(context => context.Saga.StockQuantity += context.Message.Amount)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateInventoryResponse>)
+                .RespondAsync(Message<UpdateInventoryResponse>)
                 .PublishAsync(Message<InventoryQuantityIncreased>),
 
             When(QuantityDecreased, context => context.Message.Amount > context.Saga.StockQuantity)
@@ -68,19 +68,19 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             When(QuantityDecreased)
                 .Then(context => context.Saga.StockQuantity -= context.Message.Amount)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateInventoryResponse>)
+                .RespondAsync(Message<UpdateInventoryResponse>)
                 .PublishAsync(Message<InventoryQuantityDecreased>),
 
             When(DescriptionUpdated)
                 .Then(context => context.Saga.Description = context.Message.Description)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateInventoryResponse>)
+                .RespondAsync(Message<UpdateInventoryResponse>)
                 .PublishAsync(Message<InventoryDescriptionUpdated>),
 
             When(Held)
                 .TransitionTo(OnHold)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<HoldInventoryResponse>)
+                .RespondAsync(Message<HoldInventoryResponse>)
                 .PublishAsync(Message<InventoryHeld>),
 
             When(Released)
@@ -89,11 +89,8 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             When(Deleted)
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<DeleteInventoryResponse>)
-                .PublishAsync(Message<InventoryDiscontinued>),
-
-            When(StatusRequested)
-                .RespondAsync(Response<InventoryStatusResponse>)
+                .RespondAsync(Message<DeleteInventoryResponse>)
+                .PublishAsync(Message<InventoryDiscontinued>)
         );
 
         During(OnHold,
@@ -101,23 +98,20 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             When(DescriptionUpdated)
                 .Then(context => context.Saga.Description = context.Message.Description)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateInventoryResponse>)
+                .RespondAsync(Message<UpdateInventoryResponse>)
                 .PublishAsync(Message<InventoryDescriptionUpdated>),
 
             When(Released)
                 .TransitionTo(Available)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<ReleaseInventoryResponse>)
+                .RespondAsync(Message<ReleaseInventoryResponse>)
                 .PublishAsync(Message<InventoryReleased>),
 
             When(Deleted)
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<DeleteInventoryResponse>)
+                .RespondAsync(Message<DeleteInventoryResponse>)
                 .PublishAsync(Message<InventoryDiscontinued>),
-
-            When(StatusRequested)
-                .RespondAsync(Response<InventoryStatusResponse>),
 
             // Reject quantity changes while on hold
             When(QuantityIncreased)
@@ -131,12 +125,10 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
         );
 
         During(Discontinued,
-            When(StatusRequested)
-                .RespondAsync(Response<InventoryStatusResponse>),
-
+            
             When(Deleted)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<DeleteInventoryResponse>)
+                .RespondAsync(Message<DeleteInventoryResponse>)
                 .PublishAsync(Message<InventoryDeleted>)
                 .Finalize(),
 
@@ -156,14 +148,12 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
 
         // Handle Backordered state (minimal implementation for now)
         During(Backordered,
-            When(StatusRequested)
-                .RespondAsync(Response<InventoryStatusResponse>),
-
+            
             // Allow description updates
             When(DescriptionUpdated)
                 .Then(context => context.Saga.Description = context.Message.Description)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateInventoryResponse>)
+                .RespondAsync(Message<UpdateInventoryResponse>)
                 .PublishAsync(Message<InventoryDescriptionUpdated>),
 
             // Allow quantity increases (restocking)
@@ -171,7 +161,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
                 .Then(context => context.Saga.StockQuantity += context.Message.Amount)
                 .TransitionTo(Available) // Return to available when restocked
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<UpdateInventoryResponse>)
+                .RespondAsync(Message<UpdateInventoryResponse>)
                 .PublishAsync(Message<InventoryQuantityIncreased>),
 
             // Reject other operations
@@ -187,8 +177,13 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             When(Deleted)
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
-                .RespondAsync(Response<DeleteInventoryResponse>)
+                .RespondAsync(Message<DeleteInventoryResponse>)
                 .PublishAsync(Message<InventoryDiscontinued>)
+        );
+
+        DuringAny(
+            When(StatusRequested)
+                .RespondAsync(Message<InventoryStatusResponse>)
         );
     }
     
@@ -215,57 +210,28 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
         context.Saga.CreatedOn = context.Message.Timestamp;
     }
 
-    public static void UpdateTimestamp(BehaviorContext<InventoryEntity, InventoryCommand> context)
+    private static void UpdateTimestamp(BehaviorContext<InventoryEntity, InventoryCommand> context)
     {
         context.Saga.UpdatedOn = context.Message.Timestamp;
     }
 
     private static Task<SendTuple<TMessage>> Message<TMessage>(BehaviorContext<InventoryEntity> context)
-        where TMessage : class, BaseInventoryEvent
-        => context.Init<TMessage>(new
-        {
-            InventoryId = context.Saga.CorrelationId,
-            Status = CalculateInventoryStatus(context.Saga),
-            context.Saga.PartNumber,
-            context.Saga.Description,
-            context.Saga.StockQuantity,
-            context.Saga.CreatedOn,
-            context.Saga.UpdatedOn
-        });
-
-    private static Task<SendTuple<TMessage>> Response<TMessage>(BehaviorContext<InventoryEntity> context)
         where TMessage : class, InventoryModel
         => context.Init<TMessage>(new
         {
             InventoryId = context.Saga.CorrelationId,
-            Status = CalculateInventoryStatus(context.Saga),
+            context.Saga.Status,
             context.Saga.PartNumber,
             context.Saga.Description,
             context.Saga.StockQuantity,
             context.Saga.CreatedOn,
             context.Saga.UpdatedOn
         });
-
+    
     private static void ConfigureEvent<TMessage>(IEventCorrelationConfigurator<InventoryEntity, TMessage> conf)
         where TMessage : class, InventoryCommand
     {
         conf.CorrelateById(s => s.Message.InventoryId);
         conf.OnMissingInstance(b => b.ExecuteAsync(c => throw new InventoryNotFoundException(c.Message.InventoryId)));
-    }
-
-    /// <summary>
-    /// Maps MassTransit internal state numbers to InventoryStatus enum values.
-    /// MassTransit reserves states 1 and 2 internally, so our states start at 3.
-    /// </summary>
-    private static InventoryStatus CalculateInventoryStatus(InventoryEntity entity)
-    {
-        return entity.CurrentState switch
-        {
-            3 => InventoryStatus.Available,    // Available state
-            4 => InventoryStatus.Held,         // OnHold state  
-            5 => InventoryStatus.Backordered,  // Backordered state
-            6 => InventoryStatus.Discontinued, // Discontinued state
-            _ => InventoryStatus.Invalid
-        };
     }
 }

@@ -25,7 +25,7 @@ public class MassTransitProductCommandService : IProductCommandService
         string sku,
         string? name,
         ProductDimensions? dimensions,
-        Guid? inventoryItemId,
+        Guid? inventoryId,
         int? stockThreshold,
         TimeSpan? leadTime,
         CancellationToken cancellationToken = default)
@@ -48,7 +48,7 @@ public class MassTransitProductCommandService : IProductCommandService
                 Sku = sku,
                 Name = name,
                 Dimensions = dimensions,
-                InventoryItemId = inventoryItemId,
+                InventoryId = inventoryId,
                 StockThreshold = stockThreshold,
                 LeadTime = leadTime,
                 Timestamp = _now()
