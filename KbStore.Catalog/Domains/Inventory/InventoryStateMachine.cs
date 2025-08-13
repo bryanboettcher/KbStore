@@ -118,6 +118,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
         During(Discontinued,
 
             When(Deleted)
+                .Then(ctx => LogContext.Info?.Log("Deleting discontinued instance"))
                 .Then(UpdateTimestamp)
                 .RespondAsync(Message<DeleteInventoryResponse>)
                 .PublishAsync(Message<InventoryDeleted>)
