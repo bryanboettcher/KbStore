@@ -8,42 +8,40 @@ using NUnit.Framework;
 using Shouldly;
 
 
-public abstract class InventoryCommandService_IncreaseQuantity : CommandService_Tests<MassTransitInventoryCommandService>
+public abstract class InventoryCommandService_Release : CommandService_Tests<MassTransitInventoryCommandService>
 {
     protected InventoryModel? Result;
 
     protected Guid InventoryId;
-    protected int Quantity;
 
     protected override void Arrange()
     {
         base.Arrange();
 
         InventoryId = ExistingId;
-        Quantity = 25;
     }
 
     protected override async Task Act()
     {
-        Result = await Subject.IncreaseQuantityAsync(InventoryId, Quantity);
+        Result = await Subject.ReleaseAsync(InventoryId);
     }
 
-    public class When_increasing_quantity_successfully : InventoryCommandService_IncreaseQuantity
+    public class When_releasing_successfully : InventoryCommandService_Release
     {
         protected override void OnHarnessCreating(IBusRegistrationConfigurator conf)
         {
             base.OnHarnessCreating(conf);
 
-            conf.AddHandler<IncreaseInventoryQuantityRequest>(async context =>
+            conf.AddHandler<ReleaseInventoryRequest>(async context =>
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
-                await context.RespondAsync<UpdateInventoryResponse>(new
+                await context.RespondAsync<ReleaseInventoryResponse>(new
                 {
                     InventoryId = context.Message.InventoryId,
                     PartNumber = "TEST_PART_123",
                     Description = "Test Description",
-                    StockQuantity = 125, // Original 100 + 25
+                    StockQuantity = 100,
                     Status = InventoryStatus.Available,
                     CreatedOn = Now,
                     UpdatedOn = Now
@@ -62,17 +60,17 @@ public abstract class InventoryCommandService_IncreaseQuantity : CommandService_
                 x.InventoryId.ShouldBe(ExistingId);
                 x.PartNumber.ShouldBe("TEST_PART_123");
                 x.Description.ShouldBe("Test Description");
-                x.StockQuantity.ShouldBe(125);
+                x.StockQuantity.ShouldBe(100);
                 x.Status.ShouldBe(InventoryStatus.Available);
                 x.CreatedOn.ShouldBe(Now);
                 x.UpdatedOn.ShouldBe(Now);
             });
 
-            (await Harness.Consumed.Any<IncreaseInventoryQuantityRequest>()).ShouldBeTrue();
+            (await Harness.Consumed.Any<ReleaseInventoryRequest>()).ShouldBeTrue();
         });
     }
 
-    public class When_increasing_quantity_empty_inventory_id : InventoryCommandService_IncreaseQuantity
+    public class When_releasing_empty_inventory_id : InventoryCommandService_Release
     {
         protected override void Arrange()
         {
@@ -85,63 +83,21 @@ public abstract class InventoryCommandService_IncreaseQuantity : CommandService_
         {
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<ArgumentException>();
-            LastException.Message.ShouldContain("InventoryId");
+            LastException.Message.ShouldContain("InventoryId must be set");
 
             Result.ShouldBeNull();
 
-            (await Harness.Consumed.Any<IncreaseInventoryQuantityRequest>()).ShouldBeFalse();
+            (await Harness.Consumed.Any<ReleaseInventoryRequest>()).ShouldBeFalse();
         });
     }
 
-    public class When_increasing_quantity_zero_quantity : InventoryCommandService_IncreaseQuantity
-    {
-        protected override void Arrange()
-        {
-            base.Arrange();
-            Quantity = 0;
-        }
-
-        [Test]
-        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
-        {
-            LastException.ShouldNotBeNull();
-            LastException.ShouldBeOfType<InventoryValidationException>();
-            LastException.Message.ShouldContain("quantity");
-
-            Result.ShouldBeNull();
-
-            (await Harness.Consumed.Any<IncreaseInventoryQuantityRequest>()).ShouldBeFalse();
-        });
-    }
-
-    public class When_increasing_quantity_negative_quantity : InventoryCommandService_IncreaseQuantity
-    {
-        protected override void Arrange()
-        {
-            base.Arrange();
-            Quantity = -10;
-        }
-
-        [Test]
-        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
-        {
-            LastException.ShouldNotBeNull();
-            LastException.ShouldBeOfType<InventoryValidationException>();
-            LastException.Message.ShouldContain("quantity");
-
-            Result.ShouldBeNull();
-
-            (await Harness.Consumed.Any<IncreaseInventoryQuantityRequest>()).ShouldBeFalse();
-        });
-    }
-
-    public class When_increasing_quantity_nonexistent_item : InventoryCommandService_IncreaseQuantity
+    public class When_releasing_nonexistent_item : InventoryCommandService_Release
     {
         protected override void OnHarnessCreating(IBusRegistrationConfigurator conf)
         {
             base.OnHarnessCreating(conf);
 
-            conf.AddHandler<IncreaseInventoryQuantityRequest>(context =>
+            conf.AddHandler<ReleaseInventoryRequest>(context =>
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
@@ -158,21 +114,21 @@ public abstract class InventoryCommandService_IncreaseQuantity : CommandService_
 
             Result.ShouldBeNull();
 
-            (await Harness.Consumed.Any<IncreaseInventoryQuantityRequest>()).ShouldBeTrue();
+            (await Harness.Consumed.Any<ReleaseInventoryRequest>()).ShouldBeTrue();
         });
     }
 
-    public class When_increasing_quantity_held_item : InventoryCommandService_IncreaseQuantity
+    public class When_releasing_not_held_item : InventoryCommandService_Release
     {
         protected override void OnHarnessCreating(IBusRegistrationConfigurator conf)
         {
             base.OnHarnessCreating(conf);
 
-            conf.AddHandler<IncreaseInventoryQuantityRequest>(context =>
+            conf.AddHandler<ReleaseInventoryRequest>(context =>
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
-                throw InventoryStateException.CannotModifyHeldItem(context.Message.InventoryId, "IncreaseQuantity");
+                throw InventoryStateException.NotHeld(context.Message.InventoryId);
             });
         }
 
@@ -181,26 +137,26 @@ public abstract class InventoryCommandService_IncreaseQuantity : CommandService_
         {
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<InventoryStateException>();
-            LastException.Message.ShouldContain("Held");
-            LastException.Message.ShouldContain("IncreaseQuantity");
+            LastException.Message.ShouldContain("Available");
+            LastException.Message.ShouldContain("Release");
 
             Result.ShouldBeNull();
 
-            (await Harness.Consumed.Any<IncreaseInventoryQuantityRequest>()).ShouldBeTrue();
+            (await Harness.Consumed.Any<ReleaseInventoryRequest>()).ShouldBeTrue();
         });
     }
 
-    public class When_increasing_quantity_discontinued_item : InventoryCommandService_IncreaseQuantity
+    public class When_releasing_backordered_item : InventoryCommandService_Release
     {
         protected override void OnHarnessCreating(IBusRegistrationConfigurator conf)
         {
             base.OnHarnessCreating(conf);
 
-            conf.AddHandler<IncreaseInventoryQuantityRequest>(context =>
+            conf.AddHandler<ReleaseInventoryRequest>(context =>
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
-                throw InventoryStateException.CannotModifyDiscontinuedItem(context.Message.InventoryId, "IncreaseQuantity");
+                throw InventoryStateException.NotHeld(context.Message.InventoryId);
             });
         }
 
@@ -209,22 +165,48 @@ public abstract class InventoryCommandService_IncreaseQuantity : CommandService_
         {
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<InventoryStateException>();
-            LastException.Message.ShouldContain("Discontinued");
-            LastException.Message.ShouldContain("IncreaseQuantity");
+            LastException.Message.ShouldContain("Release");
 
             Result.ShouldBeNull();
 
-            (await Harness.Consumed.Any<IncreaseInventoryQuantityRequest>()).ShouldBeTrue();
+            (await Harness.Consumed.Any<ReleaseInventoryRequest>()).ShouldBeTrue();
         });
     }
 
-    public class When_increasing_quantity_generic_fault : InventoryCommandService_IncreaseQuantity
+    public class When_releasing_discontinued_item : InventoryCommandService_Release
     {
         protected override void OnHarnessCreating(IBusRegistrationConfigurator conf)
         {
             base.OnHarnessCreating(conf);
 
-            conf.AddHandler<IncreaseInventoryQuantityRequest>(context =>
+            conf.AddHandler<ReleaseInventoryRequest>(context =>
+            {
+                context.CancellationToken.ThrowIfCancellationRequested();
+
+                throw InventoryStateException.NotHeld(context.Message.InventoryId);
+            });
+        }
+
+        [Test]
+        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+        {
+            LastException.ShouldNotBeNull();
+            LastException.ShouldBeOfType<InventoryStateException>();
+            LastException.Message.ShouldContain("Release");
+
+            Result.ShouldBeNull();
+
+            (await Harness.Consumed.Any<ReleaseInventoryRequest>()).ShouldBeTrue();
+        });
+    }
+
+    public class When_releasing_generic_fault : InventoryCommandService_Release
+    {
+        protected override void OnHarnessCreating(IBusRegistrationConfigurator conf)
+        {
+            base.OnHarnessCreating(conf);
+
+            conf.AddHandler<ReleaseInventoryRequest>(context =>
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
@@ -241,17 +223,17 @@ public abstract class InventoryCommandService_IncreaseQuantity : CommandService_
 
             Result.ShouldBeNull();
 
-            (await Harness.Consumed.Any<IncreaseInventoryQuantityRequest>()).ShouldBeTrue();
+            (await Harness.Consumed.Any<ReleaseInventoryRequest>()).ShouldBeTrue();
         });
     }
 
-    public class When_increasing_quantity_timeout : InventoryCommandService_IncreaseQuantity
+    public class When_releasing_timeout : InventoryCommandService_Release
     {
         protected override void OnHarnessCreating(IBusRegistrationConfigurator conf)
         {
             base.OnHarnessCreating(conf);
 
-            conf.AddHandler<IncreaseInventoryQuantityRequest>(async context =>
+            conf.AddHandler<ReleaseInventoryRequest>(async context =>
             {
                 await Task.Delay(1000, context.CancellationToken);
             });
@@ -265,7 +247,7 @@ public abstract class InventoryCommandService_IncreaseQuantity : CommandService_
 
             Result.ShouldBeNull();
 
-            (await Harness.Consumed.Any<IncreaseInventoryQuantityRequest>()).ShouldBeTrue();
+            (await Harness.Consumed.Any<ReleaseInventoryRequest>()).ShouldBeTrue();
         });
     }
 }

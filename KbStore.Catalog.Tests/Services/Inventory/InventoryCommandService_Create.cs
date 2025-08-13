@@ -29,8 +29,7 @@ public abstract class InventoryCommandService_Create : CommandService_Tests<Mass
 
     protected override async Task Act()
     {
-        Result = await Subject.CreateAsync(PartNumber, Description, StockQuantity)
-            .ConfigureAwait(false);
+        Result = await Subject.CreateAsync(PartNumber, Description, StockQuantity);
     }
 
     public class When_creating_valid_inventory : InventoryCommandService_Create
