@@ -40,7 +40,7 @@ public abstract class InventoryService_Tests<TService> : TestBase
     protected override Task OnPostSetup()
     {
         Subject = ScopedProvider.ServiceProvider.GetRequiredService<TService>();
-        SagaHarness = Harness!.GetSagaStateMachineHarness<InventoryStateMachine, InventoryEntity>();
+        SagaHarness = Harness.GetSagaStateMachineHarness<InventoryStateMachine, InventoryEntity>();
 
         return Task.CompletedTask;
     }

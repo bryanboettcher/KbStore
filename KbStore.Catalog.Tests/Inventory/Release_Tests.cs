@@ -39,7 +39,6 @@ public abstract class Release_Tests : InventoryService_Tests<MassTransitInventor
             Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
             Result.CreatedOn.ShouldBe(InitialCreatedOn);
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryReleased>()).ShouldBeTrue();
         });
     }
@@ -61,7 +60,6 @@ public abstract class Release_Tests : InventoryService_Tests<MassTransitInventor
             LastException.ShouldBeOfType<InventoryStateException>();
             LastException.Message.ShouldContain("Cannot perform 'Release'");
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryReleased>()).ShouldBeFalse();
         });
     }

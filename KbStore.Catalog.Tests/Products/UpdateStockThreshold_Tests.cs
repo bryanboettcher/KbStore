@@ -9,7 +9,7 @@ using Shouldly;
 
 [Category("Products")]
 [Category("Integration")]
-public abstract class UpdateStockThreshold_Tests : ProductService_Tests<MassTransitProductCommandService>
+public abstract class UpdateStockThreshold_Tests : Catalog_Tests<MassTransitProductCommandService>
 {
     protected ProductModel? Result;
 
@@ -54,7 +54,7 @@ public abstract class UpdateStockThreshold_Tests : ProductService_Tests<MassTran
 
         [Test]
         public async Task It_should_publish_product_stock_threshold_updated_event()
-            => (await Harness!.Published.Any<ProductStockThresholdUpdated>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductStockThresholdUpdated>()).ShouldBeTrue();
     }
 
     public class When_threshold_is_negative : UpdateStockThreshold_Tests
@@ -75,7 +75,7 @@ public abstract class UpdateStockThreshold_Tests : ProductService_Tests<MassTran
 
         [Test]
         public async Task It_should_not_publish_product_stock_threshold_updated_event()
-            => (await Harness!.Published.Any<ProductStockThresholdUpdated>()).ShouldBeFalse();
+            => (await Harness.Published.Any<ProductStockThresholdUpdated>()).ShouldBeFalse();
     }
 
     public class When_threshold_causes_availability_change : UpdateStockThreshold_Tests
@@ -83,18 +83,18 @@ public abstract class UpdateStockThreshold_Tests : ProductService_Tests<MassTran
         protected override void Arrange()
         {
             base.Arrange();
-            TestInventoryItemId = Guid.NewGuid();
+            TestInventoryId = Guid.NewGuid();
             TestStockThreshold = 100; // Higher than current stock
         }
 
         protected override async Task Act()
         {
-            await CreateExistingProduct(inventoryItemId: TestInventoryItemId, stockThreshold: 10);
+            await CreateExistingProduct(inventoryItemId: TestInventoryId, stockThreshold: 10);
 
             // Simulate current stock of 50
             await PublishInventoryEvent<InventoryQuantityChanged>(new
             {
-                InventoryId = TestInventoryItemId,
+                InventoryId = TestInventoryId,
                 StockQuantity = 50,
                 Timestamp = Now
             });
@@ -109,6 +109,6 @@ public abstract class UpdateStockThreshold_Tests : ProductService_Tests<MassTran
 
         [Test]
         public async Task It_should_publish_availability_changed_event()
-            => (await Harness!.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
     }
 }

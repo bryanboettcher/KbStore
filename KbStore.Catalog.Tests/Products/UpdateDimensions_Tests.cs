@@ -8,7 +8,7 @@ using Shouldly;
 
 [Category("Products")]
 [Category("Integration")]
-public abstract class UpdateDimensions_Tests : ProductService_Tests<MassTransitProductCommandService>
+public abstract class UpdateDimensions_Tests : Catalog_Tests<MassTransitProductCommandService>
 {
     protected ProductModel? Result;
 
@@ -59,7 +59,7 @@ public abstract class UpdateDimensions_Tests : ProductService_Tests<MassTransitP
 
         [Test]
         public async Task It_should_publish_product_dimensions_updated_event()
-            => (await Harness!.Published.Any<ProductDimensionsUpdated>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductDimensionsUpdated>()).ShouldBeTrue();
     }
 
     public class When_setting_null_dimensions : UpdateDimensions_Tests
@@ -80,6 +80,6 @@ public abstract class UpdateDimensions_Tests : ProductService_Tests<MassTransitP
 
         [Test]
         public async Task It_should_publish_product_dimensions_updated_event()
-            => (await Harness!.Published.Any<ProductDimensionsUpdated>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductDimensionsUpdated>()).ShouldBeTrue();
     }
 }

@@ -38,7 +38,6 @@ public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInve
             Result.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
             Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryCreated>()).ShouldBeTrue();
         });
     }
@@ -59,7 +58,6 @@ public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInve
             LastException.ShouldBeOfType<InventoryValidationException>();
             LastException.Message.ShouldContain("StockQuantity");
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryCreated>()).ShouldBeFalse();
         });
     }
@@ -80,7 +78,6 @@ public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInve
             LastException.ShouldBeOfType<InventoryValidationException>();
             LastException.Message.ShouldContain("PartNumber");
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryCreated>()).ShouldBeFalse();
         });
     }
@@ -101,7 +98,6 @@ public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInve
             LastException.ShouldBeOfType<InventoryValidationException>();
             LastException.Message.ShouldContain("Description");
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryCreated>()).ShouldBeFalse();
         });
     }
@@ -124,7 +120,6 @@ public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInve
             LastException.ShouldBeOfType<InventoryConflictException>();
             LastException.Message.ShouldContain("TEST_PART_123");
 
-            Harness.ShouldNotBeNull();
             Harness.Published.Select<InventoryCreated>().Count().ShouldBe(1);
         });
     }

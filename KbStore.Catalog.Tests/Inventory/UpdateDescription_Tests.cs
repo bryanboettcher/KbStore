@@ -37,7 +37,6 @@ public abstract class UpdateDescription_Tests : InventoryService_Tests<MassTrans
             Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
             Result.CreatedOn.ShouldBe(InitialCreatedOn);
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryDescriptionUpdated>()).ShouldBeTrue();
         });
     }
@@ -58,7 +57,6 @@ public abstract class UpdateDescription_Tests : InventoryService_Tests<MassTrans
             LastException.ShouldBeOfType<InventoryValidationException>();
             LastException.Message.ShouldContain("Description");
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryDescriptionUpdated>()).ShouldBeFalse();
         });
     }

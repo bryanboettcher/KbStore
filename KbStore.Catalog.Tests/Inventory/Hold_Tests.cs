@@ -34,7 +34,6 @@ public abstract class Hold_Tests : InventoryService_Tests<MassTransitInventoryCo
             Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
             Result.CreatedOn.ShouldBe(InitialCreatedOn);
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryHeld>()).ShouldBeTrue();
         });
     }
@@ -58,7 +57,6 @@ public abstract class Hold_Tests : InventoryService_Tests<MassTransitInventoryCo
             LastException.ShouldBeOfType<InventoryStateException>();
             LastException.Message.ShouldContain("Cannot perform 'Hold'");
 
-            Harness.ShouldNotBeNull();
             Harness.Published.Select<InventoryHeld>().Count().ShouldBe(1);
         });
     }

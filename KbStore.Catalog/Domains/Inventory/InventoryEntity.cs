@@ -19,14 +19,13 @@ public sealed class InventoryEntity : SagaStateMachineInstance
     public DateTimeOffset UpdatedOn { get; set; }
     public InventoryStatus Status => CurrentState switch
     {
-        3 => InventoryStatus.Available,    // Available state
-        4 => InventoryStatus.Held,         // OnHold state  
-        5 => InventoryStatus.Backordered,  // Backordered state
-        6 => InventoryStatus.Discontinued, // Discontinued state
+        InventoryStates.Available => InventoryStatus.Available,    // Available state
+        InventoryStates.OnHold => InventoryStatus.Held,         // OnHold state  
+        InventoryStates.Backordered => InventoryStatus.Backordered,  // Backordered state
+        InventoryStates.Discontinued => InventoryStatus.Discontinued, // Discontinued state
         _ => InventoryStatus.Invalid
     };
 }
-
 
 public class InventorySagaMap : SagaClassMap<InventoryEntity>
 {

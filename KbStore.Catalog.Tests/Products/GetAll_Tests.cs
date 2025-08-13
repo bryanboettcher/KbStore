@@ -11,7 +11,7 @@ using Shouldly;
 [Category("Products")]
 [Category("Integration")]
 [Ignore("Not implemented yet")]
-public abstract class GetAll_Tests : ProductService_Tests<DbContextProductQueryService>
+public abstract class GetAll_Tests : Catalog_Tests<DbContextProductQueryService>
 {
     protected PaginatedResponse<ProductModel>? Result;
     protected ProductPaginatedQuery? Query;

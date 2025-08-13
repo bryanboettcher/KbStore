@@ -101,3 +101,13 @@ public interface InventoryStatusRequest
 };
 public interface InventoryStatusResponse : InventoryModel;
 #endregion
+
+public static class InventoryStates
+{
+    public const int Initial = 1;
+    public const int Finalized = 2;
+    public const int Available = 3;
+    public const int OnHold = 4;
+    public const int Backordered = 5;
+    public const int Discontinued = 6;
+}

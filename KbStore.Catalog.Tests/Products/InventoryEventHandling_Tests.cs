@@ -1,6 +1,8 @@
 ﻿namespace KbStore.Catalog.Tests.Products;
 
 using Abstractions.Contracts;
+using KbStore.Catalog.Domains.Inventory;
+using MassTransit.Testing;
 using NUnit.Framework;
 using Services;
 using Shouldly;
@@ -8,36 +10,47 @@ using Shouldly;
 
 [Category("Products")]
 [Category("Integration")]
-public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTransitProductCommandService>
+public abstract class InventoryEventHandling_Tests : Catalog_Tests<MassTransitProductCommandService>
 {
     protected ProductModel? Result;
 
     protected override void Arrange()
     {
-        TestInventoryItemId = Guid.NewGuid();
+        InventoryId = Guid.NewGuid();
+
+        Harness.AddSagaInstance<InventoryEntity>(InventoryId, entity =>
+        {
+            entity.PartNumber = InventoryPartNumber;
+            entity.Description = InventoryDescription;
+            entity.StockQuantity = InventoryStockQuantity;
+            entity.CurrentState = InventoryStates.Available;
+        });
     }
 
-    protected override async Task Act()
+    protected override Task Act()
     {
-        await CreateExistingProduct(inventoryItemId: TestInventoryItemId);
-        // Subclasses publish specific inventory events
+        
     }
-
+    
     public class When_inventory_discontinued : InventoryEventHandling_Tests
     {
+        protected override void Arrange()
+        {
+            InventoryStockQuantity = 5;
+            base.Arrange();
+        }
+
         protected override async Task Act()
         {
-            await base.Act();
-
             await PublishInventoryEvent<InventoryDiscontinued>(new
             {
-                InventoryId = TestInventoryItemId,
+                InventoryId,
                 StockQuantity = 0,
                 Status = InventoryStatus.Discontinued,
                 Timestamp = Later
             });
 
-            Result = await Subject.GetAsync(TestId);
+            Result = await Subject.GetAsync(InventoryId);
         }
 
         [Test]
@@ -46,7 +59,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
 
         [Test]
         public async Task It_should_publish_product_discontinued_event()
-            => (await Harness!.Published.Any<ProductDiscontinued>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductDiscontinued>()).ShouldBeTrue();
     }
 
     public class When_inventory_held : InventoryEventHandling_Tests
@@ -57,7 +70,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
 
             await PublishInventoryEvent<InventoryHeld>(new
             {
-                InventoryId = TestInventoryItemId,
+                InventoryId = InventoryId,
                 StockQuantity = 50,
                 Status = InventoryStatus.Held,
                 Timestamp = Later
@@ -72,7 +85,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
 
         [Test]
         public async Task It_should_publish_product_availability_changed_event()
-            => (await Harness!.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
     }
 
     public class When_inventory_released : InventoryEventHandling_Tests
@@ -87,7 +100,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
             // Then release it
             await PublishInventoryEvent<InventoryReleased>(new
             {
-                InventoryId = TestInventoryItemId,
+                InventoryId = InventoryId,
                 StockQuantity = 50,
                 Status = InventoryStatus.Available,
                 Timestamp = Later
@@ -102,7 +115,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
 
         [Test]
         public async Task It_should_publish_product_availability_changed_event()
-            => (await Harness!.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
     }
 
     public class When_inventory_deleted : InventoryEventHandling_Tests
@@ -113,7 +126,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
 
             await PublishInventoryEvent<InventoryDeleted>(new
             {
-                InventoryId = TestInventoryItemId,
+                InventoryId = InventoryId,
                 StockQuantity = 0,
                 Status = InventoryStatus.Discontinued,
                 Timestamp = Later
@@ -132,11 +145,23 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
 
         [Test]
         public async Task It_should_publish_product_availability_changed_event()
-            => (await Harness!.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
     }
 
     public class When_inventory_quantity_increases_above_threshold : InventoryEventHandling_Tests
     {
+        protected override void Arrange()
+        {
+            base.Arrange();
+
+            // Pre-create linked inventory saga
+            Harness.AddSagaInstance<InventoryEntity>(InventoryId!.Value, entity =>
+            {
+                entity.StockQuantity = 5; // Below threshold
+                entity.CurrentState = 3;
+            });
+        }
+
         protected override async Task Act()
         {
             await base.Act();
@@ -144,7 +169,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
             // Start with low stock (below threshold of 10)
             await PublishInventoryEvent<InventoryQuantityChanged>(new
             {
-                InventoryId = TestInventoryItemId,
+                InventoryId = InventoryId,
                 StockQuantity = 5,
                 Timestamp = Now
             });
@@ -152,7 +177,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
             // Increase above threshold
             await PublishInventoryEvent<InventoryQuantityChanged>(new
             {
-                InventoryId = TestInventoryItemId,
+                InventoryId = InventoryId,
                 StockQuantity = 15,
                 Timestamp = Later
             });
@@ -166,7 +191,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
 
         [Test]
         public async Task It_should_publish_product_availability_changed_event()
-            => (await Harness!.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
     }
 
     public class When_inventory_quantity_decreases_below_threshold : InventoryEventHandling_Tests
@@ -178,7 +203,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
             // Start with good stock (above threshold of 10)
             await PublishInventoryEvent<InventoryQuantityChanged>(new
             {
-                InventoryId = TestInventoryItemId,
+                InventoryId = InventoryId,
                 StockQuantity = 20,
                 Timestamp = Now
             });
@@ -186,7 +211,7 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
             // Decrease below threshold
             await PublishInventoryEvent<InventoryQuantityChanged>(new
             {
-                InventoryId = TestInventoryItemId,
+                InventoryId = InventoryId,
                 StockQuantity = 5,
                 Timestamp = Later
             });
@@ -200,6 +225,6 @@ public abstract class InventoryEventHandling_Tests : ProductService_Tests<MassTr
 
         [Test]
         public async Task It_should_publish_product_availability_changed_event()
-            => (await Harness!.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductAvailabilityChanged>()).ShouldBeTrue();
     }
 }

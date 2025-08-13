@@ -138,3 +138,12 @@ public interface ProductStatusRequest : ProductCommand;
 public interface ProductStatusResponse : ProductModel;
 
 #endregion
+
+public static class ProductStates
+{
+    public const int Initial = 1;
+    public const int Finalized = 2;
+    public const int Enabled = 3;
+    public const int Disabled = 4;
+    public const int Discontinued = 5;
+}

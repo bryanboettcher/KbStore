@@ -2,6 +2,8 @@
 
 using Abstractions.Contracts;
 using Abstractions.Exceptions;
+using Domains.Inventory;
+using MassTransit.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Services;
@@ -10,7 +12,7 @@ using Shouldly;
 
 [Category("Products")]
 [Category("Integration")]
-public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCommandService>
+public abstract class CreateAsync_Tests : Catalog_Tests<MassTransitProductCommandService>
 {
     protected ProductModel? Result;
 
@@ -55,7 +57,6 @@ public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCo
             Result.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
             Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<ProductCreated>()).ShouldBeTrue();
         });
     }
@@ -64,14 +65,21 @@ public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCo
     {
         public class When_inventory_succeeds : When_creating_valid_inventory_product
         {
-            protected override async Task Act()
+            protected override void Arrange()
             {
-                await CreateExistingInventory();
+                base.Arrange();
+                InventoryId = Guid.NewGuid();
 
-                // Create product linked to real inventory
-                Result ??= await Subject.CreateAsync(ProductSku, ProductName, ProductDimensions, InventoryId, ProductStockThreshold, ProductLeadTime);
+                // Add pre-existing inventory saga instance
+                Harness.AddSagaInstance<InventoryEntity>(InventoryId, entity =>
+                {
+                    entity.PartNumber = "INV_PART_123";
+                    entity.Description = "Test Inventory";
+                    entity.StockQuantity = 50;
+                    entity.CurrentState = 3; // Available
+                });
             }
-
+            
             [Test]
             public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
             {
@@ -85,10 +93,8 @@ public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCo
                 Result.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
                 Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
 
-                Harness.ShouldNotBeNull();
                 (await Harness.Published.Any<ProductCreated>()).ShouldBeTrue();
 
-                ProductSagaHarness.ShouldNotBeNull();
                 await ProductSagaHarness.Exists(Result.ProductId, x => x.Enabled);
                 
                 ProductSagaHarness.Sagas.Contains(ProductId).ShouldSatisfyAllConditions(
@@ -123,10 +129,8 @@ public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCo
                 Result.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
                 Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
 
-                Harness.ShouldNotBeNull();
                 (await Harness.Published.Any<ProductCreated>()).ShouldBeTrue();
 
-                ProductSagaHarness.ShouldNotBeNull();
                 await ProductSagaHarness.Exists(Result.ProductId);
 
                 ProductSagaHarness.Sagas.Contains(ProductId).ShouldSatisfyAllConditions(
@@ -152,7 +156,6 @@ public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCo
                 LastException.ShouldBeOfType<ProductValidationException>();
                 LastException.Message.ShouldContain("SKU");
 
-                Harness.ShouldNotBeNull();
                 (await Harness.Published.Any<ProductCreated>()).ShouldBeFalse();
             });
         }
@@ -171,7 +174,6 @@ public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCo
                 LastException.ShouldBeOfType<ProductValidationException>();
                 LastException.Message.ShouldContain("SKU");
 
-                Harness.ShouldNotBeNull();
                 (await Harness.Published.Any<ProductCreated>()).ShouldBeFalse();
             });
         }
@@ -190,7 +192,6 @@ public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCo
                 LastException.ShouldBeOfType<ProductValidationException>();
                 LastException.Message.ShouldContain("threshold");
 
-                Harness.ShouldNotBeNull();
                 (await Harness.Published.Any<ProductCreated>()).ShouldBeFalse();
             });
         }
@@ -209,7 +210,6 @@ public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCo
                 LastException.ShouldBeOfType<ProductValidationException>();
                 LastException.Message.ShouldContain("Lead time");
 
-                Harness.ShouldNotBeNull();
                 (await Harness.Published.Any<ProductCreated>()).ShouldBeFalse();
             });
         }
@@ -232,7 +232,6 @@ public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCo
                 LastException.ShouldBeOfType<ProductConflictException>();
                 LastException.Message.ShouldContain("TEST_SKU_123");
 
-                Harness.ShouldNotBeNull();
                 Harness.Published.Select<ProductCreated>().Count().ShouldBe(1);
             });
         }
@@ -258,13 +257,11 @@ public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCo
             {
                 LastException.ShouldBeNull();
                 
-                Harness.ShouldNotBeNull();
                 (await Harness.Published.Any<ProductDiscontinued>()).ShouldBeTrue();
 
                 Result.ShouldNotBeNull();
                 Result.ProductId.ShouldNotBe(Guid.Empty);
 
-                ProductSagaHarness.ShouldNotBeNull();
                 await ProductSagaHarness.Exists(Result.ProductId, x => x.Disabled);
 
                 ProductSagaHarness.Sagas.Contains(ProductId).ShouldSatisfyAllConditions(

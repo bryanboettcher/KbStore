@@ -9,7 +9,7 @@ using Shouldly;
 
 [Category("Products")]
 [Category("Integration")]
-public abstract class Enable_Tests : ProductService_Tests<MassTransitProductCommandService>
+public abstract class Enable_Tests : Catalog_Tests<MassTransitProductCommandService>
 {
     protected ProductModel? Result;
 
@@ -58,7 +58,7 @@ public abstract class Enable_Tests : ProductService_Tests<MassTransitProductComm
 
         [Test]
         public async Task It_should_publish_product_enabled_event()
-            => (await Harness!.Published.Any<ProductEnabled>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductEnabled>()).ShouldBeTrue();
     }
 
     public class When_product_already_enabled : Enable_Tests
@@ -81,6 +81,6 @@ public abstract class Enable_Tests : ProductService_Tests<MassTransitProductComm
 
         [Test]
         public void It_should_not_publish_additional_product_enabled_event()
-            => Harness!.Published.Select<ProductEnabled>().Count().ShouldBe(0);
+            => Harness.Published.Select<ProductEnabled>().Count().ShouldBe(0);
     }
 }

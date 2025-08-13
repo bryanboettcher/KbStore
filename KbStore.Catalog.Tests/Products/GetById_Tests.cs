@@ -9,7 +9,7 @@ using Shouldly;
 
 [Category("Products")]
 [Category("Integration")]
-public abstract class GetById_Tests : ProductService_Tests<MassTransitProductCommandService>
+public abstract class GetById_Tests : Catalog_Tests<MassTransitProductCommandService>
 {
     protected ProductModel? Result;
 

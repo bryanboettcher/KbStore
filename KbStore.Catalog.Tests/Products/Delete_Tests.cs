@@ -8,7 +8,7 @@ using Shouldly;
 
 [Category("Products")]
 [Category("Integration")]
-public abstract class Delete_Tests : CatalogBase_Tests<MassTransitProductCommandService>
+public abstract class Delete_Tests : Catalog_Tests<MassTransitProductCommandService>
 {
     protected ProductModel? Result;
 
@@ -35,7 +35,6 @@ public abstract class Delete_Tests : CatalogBase_Tests<MassTransitProductCommand
             Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
             Result.CreatedOn.ShouldBe(InitialCreatedOn);
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<ProductDiscontinued>()).ShouldBeTrue();
         });
     }
@@ -56,10 +55,8 @@ public abstract class Delete_Tests : CatalogBase_Tests<MassTransitProductCommand
         {
             LastException.ShouldBeNull();
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<ProductDeleted>()).ShouldBeTrue();
 
-            ProductSagaHarness.ShouldNotBeNull();
             ProductSagaHarness.Sagas.Contains(ProductId).CurrentState.ShouldBe(2);
         });
     }

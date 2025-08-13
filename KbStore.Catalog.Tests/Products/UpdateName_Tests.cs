@@ -8,7 +8,7 @@ using Shouldly;
 
 [Category("Products")]
 [Category("Integration")]
-public abstract class UpdateName_Tests : ProductService_Tests<MassTransitProductCommandService>
+public abstract class UpdateName_Tests : Catalog_Tests<MassTransitProductCommandService>
 {
     protected ProductModel? Result;
 
@@ -53,7 +53,7 @@ public abstract class UpdateName_Tests : ProductService_Tests<MassTransitProduct
 
         [Test]
         public async Task It_should_publish_product_name_updated_event()
-            => (await Harness!.Published.Any<ProductNameUpdated>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductNameUpdated>()).ShouldBeTrue();
     }
 
     public class When_name_is_null : UpdateName_Tests
@@ -74,6 +74,6 @@ public abstract class UpdateName_Tests : ProductService_Tests<MassTransitProduct
 
         [Test]
         public async Task It_should_publish_product_name_updated_event()
-            => (await Harness!.Published.Any<ProductNameUpdated>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductNameUpdated>()).ShouldBeTrue();
     }
 }

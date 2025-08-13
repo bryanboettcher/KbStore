@@ -36,7 +36,6 @@ public abstract class IncreaseQuantity_Tests : InventoryService_Tests<MassTransi
             Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
             Result.CreatedOn.ShouldBe(Now);
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryQuantityIncreased>()).ShouldBeTrue();
         });
     }
@@ -57,7 +56,6 @@ public abstract class IncreaseQuantity_Tests : InventoryService_Tests<MassTransi
             LastException.ShouldBeOfType<InventoryValidationException>();
             LastException.Message.ShouldContain("Quantity");
 
-            Harness.ShouldNotBeNull();
             (await Harness.Published.Any<InventoryQuantityIncreased>()).ShouldBeFalse();
         });
     }

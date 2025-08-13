@@ -9,7 +9,7 @@ using Shouldly;
 
 [Category("Products")]
 [Category("Integration")]
-public abstract class UpdateLeadTime_Tests : ProductService_Tests<MassTransitProductCommandService>
+public abstract class UpdateLeadTime_Tests : Catalog_Tests<MassTransitProductCommandService>
 {
     protected ProductModel? Result;
 
@@ -54,7 +54,7 @@ public abstract class UpdateLeadTime_Tests : ProductService_Tests<MassTransitPro
 
         [Test]
         public async Task It_should_publish_product_lead_time_updated_event()
-            => (await Harness!.Published.Any<ProductLeadTimeUpdated>()).ShouldBeTrue();
+            => (await Harness.Published.Any<ProductLeadTimeUpdated>()).ShouldBeTrue();
     }
 
     public class When_lead_time_is_negative : UpdateLeadTime_Tests
@@ -75,6 +75,6 @@ public abstract class UpdateLeadTime_Tests : ProductService_Tests<MassTransitPro
 
         [Test]
         public async Task It_should_not_publish_product_lead_time_updated_event()
-            => (await Harness!.Published.Any<ProductLeadTimeUpdated>()).ShouldBeFalse();
+            => (await Harness.Published.Any<ProductLeadTimeUpdated>()).ShouldBeFalse();
     }
 }

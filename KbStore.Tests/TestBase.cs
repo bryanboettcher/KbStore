@@ -16,7 +16,7 @@ public abstract class TestBase
     protected IServiceProvider? RootProvider;
     protected IServiceScope ScopedProvider;
 
-    protected ITestHarness? Harness;
+    protected ITestHarness Harness = null!;
     protected Exception? LastException;
 
     protected TestBase()

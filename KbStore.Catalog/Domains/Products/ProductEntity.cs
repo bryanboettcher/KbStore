@@ -1,5 +1,6 @@
 ﻿namespace KbStore.Catalog.Domains.Products;
 
+using Abstractions.Contracts;
 using Inventory;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -33,9 +34,9 @@ public class ProductEntity : SagaStateMachineInstance
     public bool IsStocked { get; set; }
     public bool IsEnabled => CurrentState switch
     {
-        3 => true,  // Enabled
-        4 => false, // Disabled
-        5 => false, // Discontinued
+        ProductStates.Enabled => true,
+        ProductStates.Disabled => false,
+        ProductStates.Discontinued => false,
         _ => false
     };
     public bool IsAvailable => IsStocked && IsEnabled;
