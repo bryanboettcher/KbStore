@@ -2,14 +2,14 @@
 
 using Abstractions.Contracts;
 using Abstractions.Exceptions;
-using KbStore.Catalog.Services;
 using NUnit.Framework;
+using Services;
 using Shouldly;
 
 
 public abstract class Hold_Tests : InventoryService_Tests<MassTransitInventoryCommandService>
 {
-    protected InventoryModel? Result = null!;
+    protected InventoryModel? Result;
 
     protected override void Arrange() { }
 
@@ -24,32 +24,19 @@ public abstract class Hold_Tests : InventoryService_Tests<MassTransitInventoryCo
     public class When_holding_successfully : Hold_Tests
     {
         [Test]
-        public void It_should_not_throw()
-            => LastException.ShouldBeNull();
+        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+        {
+            LastException.ShouldBeNull();
 
-        [Test]
-        public void It_should_return_something()
-            => Result.ShouldNotBeNull();
+            Result.ShouldNotBeNull();
+            Result.InventoryId.ShouldBe(TestId);
+            Result.Status.ShouldBe(InventoryStatus.Held);
+            Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
+            Result.CreatedOn.ShouldBe(InitialCreatedOn);
 
-        [Test]
-        public void It_should_be_successful()
-            => Result!.InventoryId.ShouldBe(TestId);
-
-        [Test]
-        public void It_should_have_correct_status()
-            => Result!.Status.ShouldBe(InventoryStatus.Held);
-
-        [Test]
-        public void It_should_have_updated_on_timestamp()
-            => Result!.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
-
-        [Test]
-        public void It_should_have_unchanged_created_on_timestamp()
-            => Result!.CreatedOn.ShouldBe(InitialCreatedOn);
-
-        [Test]
-        public async Task It_should_publish_inventory_held_event()
-            => (await Harness!.Published.Any<InventoryHeld>()).ShouldBeTrue();
+            Harness.ShouldNotBeNull();
+            (await Harness.Published.Any<InventoryHeld>()).ShouldBeTrue();
+        });
     }
 
     public class When_item_cannot_be_held : Hold_Tests
@@ -65,15 +52,14 @@ public abstract class Hold_Tests : InventoryService_Tests<MassTransitInventoryCo
         }
 
         [Test]
-        public void It_should_throw_state_exception()
-            => LastException.ShouldBeOfType<InventoryStateException>();
+        public void It_should_be_correct() => Assert.Multiple(() =>
+        {
+            LastException.ShouldNotBeNull();
+            LastException.ShouldBeOfType<InventoryStateException>();
+            LastException.Message.ShouldContain("Cannot perform 'Hold'");
 
-        [Test]
-        public void It_should_have_correct_error_message()
-            => LastException!.Message.ShouldContain("Cannot perform 'Hold'");
-
-        [Test]
-        public void It_should_not_publish_inventory_held_event()
-            => Harness!.Published.Select<InventoryHeld>().Count().ShouldBe(1);
+            Harness.ShouldNotBeNull();
+            Harness.Published.Select<InventoryHeld>().Count().ShouldBe(1);
+        });
     }
 }

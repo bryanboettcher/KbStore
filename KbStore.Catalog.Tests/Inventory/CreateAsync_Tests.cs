@@ -2,15 +2,14 @@
 
 using Abstractions.Contracts;
 using Abstractions.Exceptions;
-using KbStore.Catalog.Services;
-using KbStore.Catalog.Tests;
 using NUnit.Framework;
+using Services;
 using Shouldly;
 
 
 public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInventoryCommandService>
 {
-    protected InventoryModel? Result = null!;
+    protected InventoryModel? Result;
 
     protected override void Arrange()
     {
@@ -28,36 +27,20 @@ public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInve
     public class When_creating_valid_inventory_item_should_succeed : CreateAsync_Tests
     {
         [Test]
-        public void It_should_not_throw() 
-            => LastException.ShouldBeNull();
+        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+        {
+            LastException.ShouldBeNull();
 
-        [Test]
-        public void It_should_return_valid_result() 
-            => Result.ShouldNotBeNull();
+            Result.ShouldNotBeNull();
+            Result.PartNumber.ShouldBe("TEST_PART_123");
+            Result.Description.ShouldBe("Test Description");
+            Result.Status.ShouldBe(InventoryStatus.Available);
+            Result.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
+            Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
 
-        [Test]
-        public void It_should_have_correct_part_number() 
-            => Result!.PartNumber.ShouldBe("TEST_PART_123");
-
-        [Test]
-        public void It_should_set_the_description() 
-            => Result!.Description.ShouldBe("Test Description");
-
-        [Test]
-        public void It_should_have_available_status() 
-            => Result!.Status.ShouldBe(InventoryStatus.Available);
-
-        [Test]
-        public void It_should_set_CreatedOn()
-            => Result!.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
-
-        [Test]
-        public void It_should_set_UpdatedOn()
-            => Result!.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
-
-        [Test]
-        public async Task It_should_publish_inventory_created_event()
-            => (await Harness!.Published.Any<InventoryCreated>()).ShouldBeTrue();
+            Harness.ShouldNotBeNull();
+            (await Harness.Published.Any<InventoryCreated>()).ShouldBeTrue();
+        });
     }
 
     public class When_creating_with_negative_quantity_should_fail : CreateAsync_Tests
@@ -68,18 +51,17 @@ public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInve
 
             TestQuantity = -5;
         }
-        
-        [Test]
-        public void It_should_throw_validation_exception() 
-            => LastException.ShouldBeOfType<InventoryValidationException>();
 
         [Test]
-        public void It_should_have_correct_error_message() 
-            => LastException!.Message.ShouldContain("StockQuantity");
-        
-        [Test]
-        public async Task It_should_not_publish_inventory_created_event() 
-            => (await Harness!.Published.Any<InventoryCreated>()).ShouldBeFalse();
+        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+        {
+            LastException.ShouldNotBeNull();
+            LastException.ShouldBeOfType<InventoryValidationException>();
+            LastException.Message.ShouldContain("StockQuantity");
+
+            Harness.ShouldNotBeNull();
+            (await Harness.Published.Any<InventoryCreated>()).ShouldBeFalse();
+        });
     }
 
     public class When_creating_with_empty_part_number : CreateAsync_Tests
@@ -92,16 +74,15 @@ public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInve
         }
 
         [Test]
-        public void It_should_throw_validation_exception() 
-            => LastException.ShouldBeOfType<InventoryValidationException>();
+        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+        {
+            LastException.ShouldNotBeNull();
+            LastException.ShouldBeOfType<InventoryValidationException>();
+            LastException.Message.ShouldContain("PartNumber");
 
-        [Test]
-        public void It_should_have_correct_error_message() 
-            => LastException!.Message.ShouldContain("PartNumber");
-        
-        [Test]
-        public async Task It_should_not_publish_inventory_created_event() 
-            => (await Harness!.Published.Any<InventoryCreated>()).ShouldBeFalse();
+            Harness.ShouldNotBeNull();
+            (await Harness.Published.Any<InventoryCreated>()).ShouldBeFalse();
+        });
     }
 
     public class When_creating_with_null_description : CreateAsync_Tests
@@ -114,16 +95,15 @@ public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInve
         }
 
         [Test]
-        public void It_should_throw_validation_exception() 
-            => LastException.ShouldBeOfType<InventoryValidationException>();
+        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+        {
+            LastException.ShouldNotBeNull();
+            LastException.ShouldBeOfType<InventoryValidationException>();
+            LastException.Message.ShouldContain("Description");
 
-        [Test]
-        public void It_should_have_correct_error_message() 
-            => LastException!.Message.ShouldContain("Description");
-        
-        [Test]
-        public async Task It_should_not_publish_inventory_created_event() 
-            => (await Harness!.Published.Any<InventoryCreated>()).ShouldBeFalse();
+            Harness.ShouldNotBeNull();
+            (await Harness.Published.Any<InventoryCreated>()).ShouldBeFalse();
+        });
     }
 
     public class When_creating_duplicate_part_number : CreateAsync_Tests
@@ -138,15 +118,14 @@ public abstract class CreateAsync_Tests : InventoryService_Tests<MassTransitInve
         }
 
         [Test]
-        public void It_should_throw_conflict_exception() 
-            => LastException.ShouldBeOfType<InventoryConflictException>();
+        public void It_should_be_correct() => Assert.Multiple(() =>
+        {
+            LastException.ShouldNotBeNull();
+            LastException.ShouldBeOfType<InventoryConflictException>();
+            LastException.Message.ShouldContain("TEST_PART_123");
 
-        [Test]
-        public void It_should_mention_duplicate_part_number() 
-            => LastException!.Message.ShouldContain("TEST_PART_123");
-        
-        [Test]
-        public void It_should_not_publish_additional_inventory_created_event() 
-            => Harness!.Published.Select<InventoryCreated>().Count().ShouldBe(1);
+            Harness.ShouldNotBeNull();
+            Harness.Published.Select<InventoryCreated>().Count().ShouldBe(1);
+        });
     }
 }

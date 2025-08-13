@@ -1,12 +1,12 @@
 ﻿namespace KbStore.Catalog.Tests;
 
 using Domains.Inventory;
-using Services;
 using KbStore.Tests;
 using MassTransit;
 using MassTransit.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using Services;
 
 
 [TestFixture]

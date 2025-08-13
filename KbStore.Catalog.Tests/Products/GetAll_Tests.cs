@@ -3,7 +3,6 @@
 using Abstractions.Contracts;
 using Abstractions.Services;
 using KbStore.Abstractions;
-using KbStore.Catalog.Tests;
 using NUnit.Framework;
 using Services;
 using Shouldly;
@@ -14,8 +13,8 @@ using Shouldly;
 [Ignore("Not implemented yet")]
 public abstract class GetAll_Tests : ProductService_Tests<DbContextProductQueryService>
 {
-    protected PaginatedResponse<ProductModel>? Result = null;
-    protected ProductPaginatedQuery? Query = null;
+    protected PaginatedResponse<ProductModel>? Result;
+    protected ProductPaginatedQuery? Query;
 
     protected override void Arrange()
     {

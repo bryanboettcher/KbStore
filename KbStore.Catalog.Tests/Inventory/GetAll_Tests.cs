@@ -1,18 +1,18 @@
-﻿using KbStore.Catalog.Services;
-
-namespace KbStore.Catalog.Tests.Inventory;
+﻿namespace KbStore.Catalog.Tests.Inventory;
 
 using Abstractions.Contracts;
 using Abstractions.Services;
 using KbStore.Abstractions;
 using NUnit.Framework;
+using Services;
 using Shouldly;
+
 
 [Ignore("Not implemented yet")]
 public abstract class GetAll_Tests : InventoryService_Tests<DbContextInventoryQueryService>
 {
-    protected PaginatedResponse<InventoryModel>? Result = null;
-    protected PaginatedQuery? Query = null;
+    protected PaginatedResponse<InventoryModel>? Result;
+    protected PaginatedQuery? Query;
 
     protected override void Arrange()
     {

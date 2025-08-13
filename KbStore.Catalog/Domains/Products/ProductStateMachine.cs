@@ -9,7 +9,7 @@ using MassTransit;
 
 public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
 {
-    public ProductStateMachine()
+    public ProductStateMachine(ILogger<ProductStateMachine> logger)
     {
         InstanceState(m => m.CurrentState,
             Enabled,
@@ -17,7 +17,13 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             Discontinued
         );
 
-        Request(() => InventoryStatus, s => s.InventoryStatusId);
+        Request(() => InventoryStatus, s => s.InventoryStatusId, c =>
+        {
+            c.Timeout = TimeSpan.FromSeconds(1);
+            c.Completed = m => m.OnMissingInstance(b => b.Discard());
+            c.Faulted = m => m.OnMissingInstance(b => b.Discard());
+            c.TimeoutExpired = m => m.OnMissingInstance(b => b.Discard());
+        });
 
         Event(() => Created, e => e.CorrelateBy((s, c) => s.Sku == c.Message.Sku).SelectId(_ => NewId.NextSequentialGuid()));
         Event(() => StatusRequested, e => e.CorrelateById(c => c.Message.ProductId).OnMissingInstance(b => b.Execute(c => throw new ProductNotFoundException(c.Message.ProductId))));
@@ -41,29 +47,43 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .Then(context => throw ProductValidationException.InvalidSku(context.Message.Sku)),
 
             When(Created)
+                .Then(ctx => logger.LogInformation("Creating new Product"))
                 .Then(SetProperties)
                 .Then(UpdateTimestamp)
                 .IfElse(ctx => ctx.Saga.InventoryId is not null,
                     
-                    t => t.TransitionTo(InventoryStatus.Pending)
+                    t => t.Then(ctx => logger.LogWarning("Calling to Inventory to verify status"))
+                        .TransitionTo(InventoryStatus.Pending)
                         .Request(InventoryStatus, c => c.Init<InventoryStatusRequest>(new { c.Message.InventoryId })),
                         
-                    f => f.TransitionTo(Enabled)
+                    f => f.Then(ctx => logger.LogInformation("No Inventory is attached, finishing creation"))
+                        .Then(context => context.Saga.IsStocked = true)   // non-inventory products are always stocked unless disabled
+                        .TransitionTo(Enabled)
                         .PublishAsync(Message<ProductCreated>)
                 )
                 .RespondAsync(Message<CreateProductResponse>)
         );
 
         During(InventoryStatus.Pending,
+
             When(InventoryStatus.Completed)
+                .Then(ctx => logger.LogInformation("Inventory successful"))
                 .Then(context => context.Saga.StockQuantity = context.Message.StockQuantity)
                 .TransitionTo(Enabled)
                 .PublishAsync(Message<ProductCreated>),
 
             When(InventoryStatus.Faulted)
+                .Then(ctx => logger.LogWarning("Inventory faulted"))
+                .Then(context => context.Saga.StockQuantity = 0)
+                .TransitionTo(Disabled)
+                .PublishAsync(Message<ProductCreated>),
+
+            When(InventoryStatus.TimeoutExpired)
+                .Then(ctx => logger.LogWarning("Inventory timed out"))
                 .Then(context => context.Saga.StockQuantity = 0)
                 .TransitionTo(Disabled)
                 .PublishAsync(Message<ProductCreated>)
+
         );
 
         During(Enabled,
@@ -206,6 +226,9 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .PublishAsync(Message<ProductDeleted>)
                 .Finalize(),
 
+            Ignore(InventoryDiscontinued),
+                
+
             // Reject all other operations on discontinued products
             When(NameUpdated)
                 .Then(context => throw ProductStateException.CannotModifyDiscontinuedProduct(context.Saga.CorrelationId, "UpdateName")),
@@ -230,6 +253,8 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             When(StatusRequested)
                 .RespondAsync(Message<ProductStatusResponse>)
         );
+
+        SetCompletedWhenFinalized();
     }
 
     public Event<CreateProductRequest> Created { get; }

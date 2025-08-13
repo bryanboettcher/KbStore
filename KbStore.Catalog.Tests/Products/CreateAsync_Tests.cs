@@ -2,7 +2,7 @@
 
 using Abstractions.Contracts;
 using Abstractions.Exceptions;
-using KbStore.Catalog.Tests;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Services;
 using Shouldly;
@@ -10,202 +10,268 @@ using Shouldly;
 
 [Category("Products")]
 [Category("Integration")]
-public abstract class CreateAsync_Tests : ProductService_Tests<MassTransitProductCommandService>
+public abstract class CreateAsync_Tests : CatalogBase_Tests<MassTransitProductCommandService>
 {
-    protected ProductModel? Result = null!;
+    protected ProductModel? Result;
 
     protected override void Arrange()
     {
-        TestSku = "TEST_SKU_123";
-        TestName = "Test Product";
-        TestDimensions = new ProductDimensions { Width = 10m, Height = 5m, Length = 15m, Weight = 2.5m };
-        TestStockThreshold = 10;
-        TestLeadTime = TimeSpan.FromDays(7);
+        ProductSku = "TEST_SKU_123";
+        ProductName = "Test Product";
+        ProductDimensions = new ProductDimensions
+        {
+            Width = 10m,
+            Height = 5m,
+            Length = 15m,
+            Weight = 2.5m
+        };
+        ProductStockThreshold = 10;
+        ProductLeadTime = TimeSpan.FromDays(7);
     }
 
     protected override async Task Act()
     {
-        Result ??= await Subject.CreateAsync(TestSku!, TestName, TestDimensions, TestInventoryItemId, TestStockThreshold, TestLeadTime);
+        Result ??= await Subject.CreateAsync(ProductSku, ProductName, ProductDimensions, InventoryId, ProductStockThreshold, ProductLeadTime);
     }
-
-    public class When_creating_valid_product_should_succeed : CreateAsync_Tests
-    {
-        [Test]
-        public void It_should_not_throw()
-            => LastException.ShouldBeNull();
-
-        [Test]
-        public void It_should_return_valid_result()
-            => Result.ShouldNotBeNull();
-
-        [Test]
-        public void It_should_have_correct_sku()
-            => Result!.Sku.ShouldBe("TEST_SKU_123");
-
-        [Test]
-        public void It_should_set_the_name()
-            => Result!.Name.ShouldBe("Test Product");
-
-        [Test]
-        public void It_should_have_enabled_status()
-            => Result!.IsEnabled.ShouldBeTrue();
-
-        [Test]
-        public void It_should_be_available()
-            => Result!.IsAvailable.ShouldBeTrue();
-
-        [Test]
-        public void It_should_set_CreatedOn()
-            => Result!.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
-
-        [Test]
-        public void It_should_set_UpdatedOn()
-            => Result!.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
-
-        [Test]
-        public async Task It_should_publish_product_created_event()
-            => (await Harness!.Published.Any<ProductCreated>()).ShouldBeTrue();
-    }
-
-    public class When_creating_with_empty_sku_should_fail : CreateAsync_Tests
+    
+    public class When_creating_valid_standalone_product : CreateAsync_Tests
     {
         protected override void Arrange()
         {
             base.Arrange();
-            TestSku = "";
+            InventoryId = null; // No inventory link
         }
 
         [Test]
-        public void It_should_throw_validation_exception()
-            => LastException.ShouldBeOfType<ProductValidationException>();
+        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+        {
+            LastException.ShouldBeNull();
 
-        [Test]
-        public void It_should_have_correct_error_message()
-            => LastException!.Message.ShouldContain("SKU");
+            Result.ShouldNotBeNull();
+            Result.Sku.ShouldBe("TEST_SKU_123");
+            Result.Name.ShouldBe("Test Product");
+            Result.IsEnabled.ShouldBeTrue();
+            Result.IsAvailable.ShouldBeTrue();
+            Result.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
+            Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
 
-        [Test]
-        public async Task It_should_not_publish_product_created_event()
-            => (await Harness!.Published.Any<ProductCreated>()).ShouldBeFalse();
+            Harness.ShouldNotBeNull();
+            (await Harness.Published.Any<ProductCreated>()).ShouldBeTrue();
+        });
     }
-
-    public class When_creating_with_null_sku_should_fail : CreateAsync_Tests
+    
+    public abstract class When_creating_valid_inventory_product : CreateAsync_Tests
     {
-        protected override void Arrange()
+        public class When_inventory_succeeds : When_creating_valid_inventory_product
         {
-            base.Arrange();
-            TestSku = null!;
-        }
-
-        [Test]
-        public void It_should_throw_validation_exception()
-            => LastException.ShouldBeOfType<ProductValidationException>();
-
-        [Test]
-        public void It_should_have_correct_error_message()
-            => LastException!.Message.ShouldContain("SKU");
-
-        [Test]
-        public async Task It_should_not_publish_product_created_event()
-            => (await Harness!.Published.Any<ProductCreated>()).ShouldBeFalse();
-    }
-
-    public class When_creating_with_negative_stock_threshold_should_fail : CreateAsync_Tests
-    {
-        protected override void Arrange()
-        {
-            base.Arrange();
-            TestStockThreshold = -5;
-        }
-
-        [Test]
-        public void It_should_throw_validation_exception()
-            => LastException.ShouldBeOfType<ProductValidationException>();
-
-        [Test]
-        public void It_should_have_correct_error_message()
-            => LastException!.Message.ShouldContain("threshold");
-
-        [Test]
-        public async Task It_should_not_publish_product_created_event()
-            => (await Harness!.Published.Any<ProductCreated>()).ShouldBeFalse();
-    }
-
-    public class When_creating_with_negative_lead_time_should_fail : CreateAsync_Tests
-    {
-        protected override void Arrange()
-        {
-            base.Arrange();
-            TestLeadTime = TimeSpan.FromDays(-1);
-        }
-
-        [Test]
-        public void It_should_throw_validation_exception()
-            => LastException.ShouldBeOfType<ProductValidationException>();
-
-        [Test]
-        public void It_should_have_correct_error_message()
-            => LastException!.Message.ShouldContain("Lead time");
-
-        [Test]
-        public async Task It_should_not_publish_product_created_event()
-            => (await Harness!.Published.Any<ProductCreated>()).ShouldBeFalse();
-    }
-
-    public class When_creating_duplicate_sku : CreateAsync_Tests
-    {
-        protected override async Task Act()
-        {
-            // create our initial
-            await Subject.CreateAsync(TestSku!, TestName, TestDimensions, TestInventoryItemId, TestStockThreshold, TestLeadTime);
-
-            // create the duplicate
-            await base.Act();
-        }
-
-        [Test]
-        public void It_should_throw_conflict_exception()
-            => LastException.ShouldBeOfType<ProductConflictException>();
-
-        [Test]
-        public void It_should_mention_duplicate_sku()
-            => LastException!.Message.ShouldContain("TEST_SKU_123");
-
-        [Test]
-        public void It_should_not_publish_additional_product_created_event()
-            => Harness!.Published.Select<ProductCreated>().Count().ShouldBe(1);
-    }
-
-    public class When_linked_inventory_is_discontinued : CreateAsync_Tests
-    {
-        protected override void Arrange()
-        {
-            base.Arrange();
-            TestInventoryItemId = Guid.NewGuid();
-        }
-
-        protected override async Task Act()
-        {
-            await base.Act();
-
-            // Simulate inventory discontinued after creation
-            await PublishInventoryEvent<InventoryDiscontinued>(new
+            protected override async Task Act()
             {
-                InventoryId = TestInventoryItemId,
-                StockQuantity = 0,
-                Status = InventoryStatus.Discontinued,
-                Timestamp = Later
-            });
+                await CreateExistingInventory();
 
-            // Get updated state
-            Result = await Subject.GetAsync(TestId);
+                // Create product linked to real inventory
+                Result ??= await Subject.CreateAsync(ProductSku, ProductName, ProductDimensions, InventoryId, ProductStockThreshold, ProductLeadTime);
+            }
+
+            [Test]
+            public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+            {
+                LastException.ShouldBeNull();
+
+                Result.ShouldNotBeNull();
+                Result.ProductId.ShouldNotBe(Guid.Empty);
+                Result.Sku.ShouldBe("TEST_SKU_123");
+                Result.Name.ShouldBe("Test Product");
+                Result.InventoryItemId.ShouldBe(InventoryId);
+                Result.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
+                Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
+
+                Harness.ShouldNotBeNull();
+                (await Harness.Published.Any<ProductCreated>()).ShouldBeTrue();
+
+                ProductSagaHarness.ShouldNotBeNull();
+                await ProductSagaHarness.Exists(Result.ProductId, x => x.Enabled);
+                
+                ProductSagaHarness.Sagas.Contains(ProductId).ShouldSatisfyAllConditions(
+                    entity => entity.IsEnabled.ShouldBeTrue(),
+                    entity => entity.IsAvailable.ShouldBeTrue(),
+                    entity => entity.StockQuantity.ShouldBe(50)
+                );
+            });
         }
 
-        [Test]
-        public void It_should_discontinue_product()
-            => Result!.IsEnabled.ShouldBeFalse();
+        public class When_inventory_fails : When_creating_valid_inventory_product
+        {
+            protected override async Task Act()
+            {
+                // Use non-existent inventory ID to trigger failure path
+                InventoryId = Guid.NewGuid();
 
-        [Test]
-        public async Task It_should_publish_product_discontinued_event()
-            => (await Harness!.Published.Any<ProductDiscontinued>()).ShouldBeTrue();
+                // Create product linked to non-existent inventory
+                Result ??= await Subject.CreateAsync(ProductSku, ProductName, ProductDimensions, InventoryId, ProductStockThreshold, ProductLeadTime);
+            }
+
+            [Test]
+            public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+            {
+                LastException.ShouldBeNull();
+
+                Result.ShouldNotBeNull();
+                Result.ProductId.ShouldNotBe(Guid.Empty);
+                Result.Sku.ShouldBe("TEST_SKU_123");
+                Result.Name.ShouldBe("Test Product");
+                Result.InventoryItemId.ShouldBe(InventoryId);
+                Result.CreatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
+                Result.UpdatedOn.ShouldBe(Now, TimeSpan.FromSeconds(0.25));
+
+                Harness.ShouldNotBeNull();
+                (await Harness.Published.Any<ProductCreated>()).ShouldBeTrue();
+
+                ProductSagaHarness.ShouldNotBeNull();
+                await ProductSagaHarness.Exists(Result.ProductId);
+
+                ProductSagaHarness.Sagas.Contains(ProductId).ShouldSatisfyAllConditions(
+                    entity => entity.IsEnabled.ShouldBeFalse(),
+                    entity => entity.IsAvailable.ShouldBeFalse(),
+                    entity => entity.StockQuantity.ShouldBe(0),
+                    entity => entity.InventoryId.ShouldBe(InventoryId)
+                );
+            });
+        }
+
+        public class When_creating_with_empty_sku : CreateAsync_Tests
+        {
+            protected override void Arrange()
+            {
+                base.Arrange();
+                ProductSku = "";
+            }
+
+            [Test]
+            public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+            {
+                LastException.ShouldBeOfType<ProductValidationException>();
+                LastException.Message.ShouldContain("SKU");
+
+                Harness.ShouldNotBeNull();
+                (await Harness.Published.Any<ProductCreated>()).ShouldBeFalse();
+            });
+        }
+        
+        public class When_creating_with_null_sku : CreateAsync_Tests
+        {
+            protected override void Arrange()
+            {
+                base.Arrange();
+                ProductSku = null!;
+            }
+
+            [Test]
+            public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+            {
+                LastException.ShouldBeOfType<ProductValidationException>();
+                LastException.Message.ShouldContain("SKU");
+
+                Harness.ShouldNotBeNull();
+                (await Harness.Published.Any<ProductCreated>()).ShouldBeFalse();
+            });
+        }
+        
+        public class When_creating_with_negative_stock_threshold : CreateAsync_Tests
+        {
+            protected override void Arrange()
+            {
+                base.Arrange();
+                ProductStockThreshold = -5;
+            }
+
+            [Test]
+            public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+            {
+                LastException.ShouldBeOfType<ProductValidationException>();
+                LastException.Message.ShouldContain("threshold");
+
+                Harness.ShouldNotBeNull();
+                (await Harness.Published.Any<ProductCreated>()).ShouldBeFalse();
+            });
+        }
+
+        public class When_creating_with_negative_lead_time : CreateAsync_Tests
+        {
+            protected override void Arrange()
+            {
+                base.Arrange();
+                ProductLeadTime = TimeSpan.FromDays(-1);
+            }
+
+            [Test]
+            public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+            {
+                LastException.ShouldBeOfType<ProductValidationException>();
+                LastException.Message.ShouldContain("Lead time");
+
+                Harness.ShouldNotBeNull();
+                (await Harness.Published.Any<ProductCreated>()).ShouldBeFalse();
+            });
+        }
+
+        public class When_creating_duplicate_sku : CreateAsync_Tests
+        {
+            protected override async Task Act()
+            {
+                // create our initial
+                await Subject.CreateAsync(ProductSku, ProductName, ProductDimensions, InventoryId, ProductStockThreshold, ProductLeadTime);
+
+                // create the duplicate
+                await base.Act();
+            }
+
+            [Test]
+            public void It_should_be_correct() => Assert.Multiple(() =>
+            {
+                LastException.ShouldNotBeNull();
+                LastException.ShouldBeOfType<ProductConflictException>();
+                LastException.Message.ShouldContain("TEST_SKU_123");
+
+                Harness.ShouldNotBeNull();
+                Harness.Published.Select<ProductCreated>().Count().ShouldBe(1);
+            });
+        }
+
+        public class When_linked_inventory_is_discontinued : CreateAsync_Tests
+        {
+            protected override async Task Act()
+            {
+                await base.Act();
+
+                // Simulate inventory discontinued after creation
+                await PublishInventoryEvent<InventoryDiscontinued>(new
+                {
+                    InventoryId,
+                    StockQuantity = 0,
+                    Status = InventoryStatus.Discontinued,
+                    Timestamp = Later
+                });
+            }
+
+            [Test]
+            public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+            {
+                LastException.ShouldBeNull();
+                
+                Harness.ShouldNotBeNull();
+                (await Harness.Published.Any<ProductDiscontinued>()).ShouldBeTrue();
+
+                Result.ShouldNotBeNull();
+                Result.ProductId.ShouldNotBe(Guid.Empty);
+
+                ProductSagaHarness.ShouldNotBeNull();
+                await ProductSagaHarness.Exists(Result.ProductId, x => x.Disabled);
+
+                ProductSagaHarness.Sagas.Contains(ProductId).ShouldSatisfyAllConditions(
+                    entity => entity.IsEnabled.ShouldBeFalse(),
+                    entity => entity.InventoryId.ShouldBe(InventoryId)
+                );
+            });
+        }
     }
 }

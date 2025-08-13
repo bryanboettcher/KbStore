@@ -1,7 +1,6 @@
 ﻿namespace KbStore.Catalog.Tests.Products;
 
 using Abstractions.Contracts;
-using KbStore.Catalog.Tests;
 using NUnit.Framework;
 using Services;
 using Shouldly;

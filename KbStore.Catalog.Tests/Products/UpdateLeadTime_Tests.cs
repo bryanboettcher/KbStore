@@ -2,7 +2,6 @@
 
 using Abstractions.Contracts;
 using Abstractions.Exceptions;
-using KbStore.Catalog.Tests;
 using NUnit.Framework;
 using Services;
 using Shouldly;
@@ -12,7 +11,7 @@ using Shouldly;
 [Category("Integration")]
 public abstract class UpdateLeadTime_Tests : ProductService_Tests<MassTransitProductCommandService>
 {
-    protected ProductModel? Result = null!;
+    protected ProductModel? Result;
 
     protected override void Arrange()
     {

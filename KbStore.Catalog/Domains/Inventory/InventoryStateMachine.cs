@@ -185,6 +185,8 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             When(StatusRequested)
                 .RespondAsync(Message<InventoryStatusResponse>)
         );
+
+        SetCompletedWhenFinalized();
     }
     
     public Event<CreateInventoryRequest> Created { get; }
