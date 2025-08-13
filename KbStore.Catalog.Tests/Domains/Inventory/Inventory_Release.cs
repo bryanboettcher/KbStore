@@ -11,8 +11,8 @@ using Shouldly;
 [TestFixture]
 public class Inventory_Release : StateMachine_Tests
 {
-    protected IRequestClient<ReleaseInventoryRequest> Client;
-    protected Response<ReleaseInventoryResponse> Response;
+    protected IRequestClient<ReleaseInventoryRequest> Client = null!;
+    protected Response<ReleaseInventoryResponse> Response = null!;
 
     protected override void Arrange()
     {

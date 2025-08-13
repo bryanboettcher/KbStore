@@ -11,8 +11,8 @@ using Shouldly;
 [TestFixture]
 public class Inventory_UpdateDescription : StateMachine_Tests
 {
-    protected IRequestClient<UpdateInventoryDescriptionRequest> Client;
-    protected Response<UpdateInventoryResponse> Response;
+    protected IRequestClient<UpdateInventoryDescriptionRequest> Client = null!;
+    protected Response<UpdateInventoryResponse> Response = null!;
 
     protected override void Arrange()
     {

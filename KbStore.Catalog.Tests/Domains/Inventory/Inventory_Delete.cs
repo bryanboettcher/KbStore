@@ -11,8 +11,8 @@ using Shouldly;
 [TestFixture]
 public class Inventory_Delete : StateMachine_Tests
 {
-    protected IRequestClient<DeleteInventoryRequest> Client;
-    protected Response<DeleteInventoryResponse> Response;
+    protected IRequestClient<DeleteInventoryRequest> Client = null!;
+    protected Response<DeleteInventoryResponse> Response = null!;
 
     protected override void Arrange()
     {
@@ -121,7 +121,7 @@ public class Inventory_Delete : StateMachine_Tests
             Response.Message.InventoryId.ShouldBe(ExistingId);
 
             // Second delete should finalize the saga
-            (await InventorySagaHarness.Exists(ExistingId, m => m.Final)).ShouldBe(ExistingId);
+            (await InventorySagaHarness.NotExists(ExistingId)).ShouldNotBe(ExistingId);
             
             (await Harness.Published.Any<InventoryDeleted>()).ShouldBeTrue();
         });
