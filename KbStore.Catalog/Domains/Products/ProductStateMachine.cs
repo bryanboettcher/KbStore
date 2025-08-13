@@ -31,6 +31,10 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
         Event(() => Deleted, ConfigureEvent);
 
         Event(() => InventoryQuantityChanged, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
+        Event(() => InventoryDiscontinued, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
+        Event(() => InventoryDeleted, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
+        Event(() => InventoryHeld, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
+        Event(() => InventoryReleased, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
 
         Initially(
             When(Created, context => string.IsNullOrWhiteSpace(context.Message.Sku))
@@ -41,9 +45,9 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .Then(UpdateTimestamp)
                 .IfElse(ctx => ctx.Saga.InventoryId is not null,
                     
-                    t => t.Request(InventoryStatus, c => c.Init<InventoryStatusRequest>(new { c.Message.InventoryId }))
-                        .TransitionTo(InventoryStatus.Pending),
-
+                    t => t.TransitionTo(InventoryStatus.Pending)
+                        .Request(InventoryStatus, c => c.Init<InventoryStatusRequest>(new { c.Message.InventoryId })),
+                        
                     f => f.TransitionTo(Enabled)
                         .PublishAsync(Message<ProductCreated>)
                 )
@@ -52,11 +56,14 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
 
         During(InventoryStatus.Pending,
             When(InventoryStatus.Completed)
+                .Then(context => context.Saga.StockQuantity = context.Message.StockQuantity)
                 .TransitionTo(Enabled)
                 .PublishAsync(Message<ProductCreated>),
 
             When(InventoryStatus.Faulted)
+                .Then(context => context.Saga.StockQuantity = 0)
                 .TransitionTo(Disabled)
+                .PublishAsync(Message<ProductCreated>)
         );
 
         During(Enabled,
@@ -82,11 +89,6 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductStockThresholdUpdated>),
 
-            When(InventoryQuantityChanged)
-                .If(AvailabilityChanged, 
-                    b => b.PublishAsync(Message<ProductAvailabilityChanged>)
-                ),
-
             When(LeadTimeUpdated)
                 .Then(context => context.Saga.LeadTime = context.Message.LeadTime)
                 .Then(UpdateTimestamp)
@@ -106,7 +108,30 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
                 .RespondAsync(Message<DeleteProductResponse>)
-                .PublishAsync(Message<ProductDiscontinued>)
+                .PublishAsync(Message<ProductDiscontinued>),
+
+            When(InventoryQuantityChanged)
+                .Then(UpdateStockQuantity)
+                .PublishAsync(Message<ProductAvailabilityChanged>),
+
+            When(InventoryDiscontinued)
+                .Then(UpdateStockQuantity)
+                .TransitionTo(Discontinued)
+                .PublishAsync(Message<ProductAvailabilityChanged>),
+
+            When(InventoryDeleted)
+                .Finalize()
+                .PublishAsync(Message<ProductAvailabilityChanged>),
+
+            When(InventoryHeld)
+                .Then(UpdateStockQuantity)
+                .Then(context => context.Saga.IsStocked = false)
+                .PublishAsync(Message<ProductAvailabilityChanged>),
+
+            When(InventoryReleased)
+                .Then(UpdateStockQuantity)
+                .Then(context => context.Saga.IsStocked = StockQuantityValid(context.Saga))
+                .PublishAsync(Message<ProductAvailabilityChanged>)
         );
 
         During(Disabled,
@@ -147,7 +172,30 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
                 .RespondAsync(Message<DeleteProductResponse>)
-                .PublishAsync(Message<ProductDiscontinued>)
+                .PublishAsync(Message<ProductDiscontinued>),
+
+            When(InventoryQuantityChanged)
+                .Then(UpdateStockQuantity)
+                .PublishAsync(Message<ProductAvailabilityChanged>),
+
+            When(InventoryDiscontinued)
+                .Then(UpdateStockQuantity)
+                .TransitionTo(Discontinued)
+                .PublishAsync(Message<ProductAvailabilityChanged>),
+
+            When(InventoryDeleted)
+                .Finalize()
+                .PublishAsync(Message<ProductAvailabilityChanged>),
+
+            When(InventoryHeld)
+                .Then(UpdateStockQuantity)
+                .Then(context => context.Saga.IsStocked = false)
+                .PublishAsync(Message<ProductAvailabilityChanged>),
+
+            When(InventoryReleased)
+                .Then(UpdateStockQuantity)
+                .Then(context => context.Saga.IsStocked = StockQuantityValid(context.Saga))
+                .PublishAsync(Message<ProductAvailabilityChanged>)
         );
 
         During(Discontinued,
@@ -192,10 +240,14 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
     public Event<EnableProductRequest> EnableRequested { get; }
     public Event<DisableProductRequest> DisableRequested { get; }
     public Event<DeleteProductRequest> Deleted { get; }
-    
     public Event<ProductStatusRequest> StatusRequested { get; }
 
+    // Inventory-related events
     public Event<InventoryQuantityChanged> InventoryQuantityChanged { get; }
+    public Event<InventoryDiscontinued> InventoryDiscontinued { get; }
+    public Event<InventoryDeleted> InventoryDeleted { get; }
+    public Event<InventoryHeld> InventoryHeld { get; }
+    public Event<InventoryReleased> InventoryReleased { get; }
     
     public Request<ProductEntity, InventoryStatusRequest, InventoryStatusResponse> InventoryStatus { get; }
 
@@ -239,15 +291,14 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
         context.Saga.UpdatedOn = context.Message.Timestamp;
     }
 
-    private static bool AvailabilityChanged(BehaviorContext<ProductEntity, InventoryUpdated> context)
+    private static void UpdateStockQuantity(BehaviorContext<ProductEntity, InventoryModel> context)
     {
-        var originalStatus = context.Saga.IsStocked;
-        var requiredStock = context.Saga.StockThreshold ?? context.Saga.Quantity;
+        context.Saga.StockQuantity = context.Message.StockQuantity;
+    }
 
-        var updatedStatus = (context.Message.StockQuantity >= requiredStock);
-        context.Saga.IsStocked = updatedStatus;
-
-        return originalStatus != updatedStatus;
+    private static bool StockQuantityValid(ProductEntity saga)
+    {
+        return (saga.StockQuantity ?? 0) >= (saga.StockThreshold ?? 0);
     }
 
     private static Task<SendTuple<TMessage>> Message<TMessage>(BehaviorContext<ProductEntity> context)

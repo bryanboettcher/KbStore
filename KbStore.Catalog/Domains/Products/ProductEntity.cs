@@ -26,6 +26,8 @@ public class ProductEntity : SagaStateMachineInstance
     public decimal? Depth { get; set; }
 
     public Guid? InventoryId { get; set; }
+    public int? StockQuantity { get; set; }
+
     public int? StockThreshold { get; set; }
     public TimeSpan? LeadTime { get; set; }
     public bool IsStocked { get; set; }
@@ -37,12 +39,11 @@ public class ProductEntity : SagaStateMachineInstance
         _ => false
     };
     public bool IsAvailable => IsStocked && IsEnabled;
-
+    
     public DateTimeOffset CreatedOn { get; set; }
     public DateTimeOffset UpdatedOn { get; set; }
 
     public InventoryEntity? Inventory { get; set; }
-
 }
 
 public class ProductSagaMap : SagaClassMap<ProductEntity>

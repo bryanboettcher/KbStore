@@ -44,7 +44,7 @@ public interface ProductModel
     TimeSpan? LeadTime { get; }
     bool IsStocked { get; }
     bool IsEnabled { get; }
-    bool IsAvailable => IsStocked && IsEnabled;
+    bool IsAvailable { get; }
     DateTimeOffset CreatedOn { get; }
     DateTimeOffset UpdatedOn { get; }
 }
@@ -100,8 +100,12 @@ public interface UpdateProductLeadTimeRequest : ProductCommand
 public interface UpdateProductResponse : ProductModel;
 public interface ProductNameUpdated : ProductUpdated;
 public interface ProductDimensionsUpdated : ProductUpdated;
-public interface ProductStockThresholdUpdated : ProductUpdated;
 public interface ProductLeadTimeUpdated : ProductUpdated;
+
+// multiple types of events will change availability, so we use an
+// intermediate event type to reduce messaging noise
+public interface ProductAvailabilityChanged : ProductUpdated;
+public interface ProductStockThresholdUpdated : ProductAvailabilityChanged;
 
 #endregion
 
@@ -116,8 +120,6 @@ public interface DisableProductResponse : ProductModel;
 public interface ProductEnabled : ProductUpdated;
 public interface ProductDisabled : ProductUpdated;
 
-// System-generated availability changes from inventory events
-public interface ProductAvailabilityChanged : ProductUpdated;
 
 #endregion
 

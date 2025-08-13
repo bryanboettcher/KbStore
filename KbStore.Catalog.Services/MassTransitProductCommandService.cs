@@ -12,12 +12,12 @@ using MassTransit;
 /// </summary>
 public class MassTransitProductCommandService : IProductCommandService
 {
-    private readonly IBus _bus;
+    private readonly IClientFactory _clientFactory;
     private readonly Func<DateTimeOffset> _now;
 
-    public MassTransitProductCommandService(IBus bus, Func<DateTimeOffset> now)
+    public MassTransitProductCommandService(IClientFactory clientFactory, Func<DateTimeOffset> now)
     {
-        _bus = bus ?? throw new ArgumentNullException(nameof(bus));
+        _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
         _now = now ?? throw new ArgumentNullException(nameof(now));
     }
 
@@ -39,7 +39,7 @@ public class MassTransitProductCommandService : IProductCommandService
         if (leadTime?.TotalSeconds < 0)
             throw ProductValidationException.InvalidLeadTime(leadTime);
 
-        var client = _bus.CreateRequestClient<CreateProductRequest>();
+        var client = _clientFactory.CreateRequestClient<CreateProductRequest>();
 
         try
         {
@@ -70,7 +70,7 @@ public class MassTransitProductCommandService : IProductCommandService
         if (productId == Guid.Empty)
             throw new ArgumentException("ProductId must be set", nameof(productId));
 
-        var client = _bus.CreateRequestClient<UpdateProductNameRequest>();
+        var client = _clientFactory.CreateRequestClient<UpdateProductNameRequest>();
 
         try
         {
@@ -97,7 +97,7 @@ public class MassTransitProductCommandService : IProductCommandService
         if (productId == Guid.Empty)
             throw new ArgumentException("ProductId must be set", nameof(productId));
 
-        var client = _bus.CreateRequestClient<UpdateProductDimensionsRequest>();
+        var client = _clientFactory.CreateRequestClient<UpdateProductDimensionsRequest>();
 
         try
         {
@@ -127,7 +127,7 @@ public class MassTransitProductCommandService : IProductCommandService
         if (stockThreshold < 0)
             throw ProductValidationException.InvalidStockThreshold(stockThreshold);
 
-        var client = _bus.CreateRequestClient<UpdateProductStockThresholdRequest>();
+        var client = _clientFactory.CreateRequestClient<UpdateProductStockThresholdRequest>();
 
         try
         {
@@ -157,7 +157,7 @@ public class MassTransitProductCommandService : IProductCommandService
         if (leadTime?.TotalSeconds < 0)
             throw ProductValidationException.InvalidLeadTime(leadTime);
 
-        var client = _bus.CreateRequestClient<UpdateProductLeadTimeRequest>();
+        var client = _clientFactory.CreateRequestClient<UpdateProductLeadTimeRequest>();
 
         try
         {
@@ -183,7 +183,7 @@ public class MassTransitProductCommandService : IProductCommandService
         if (productId == Guid.Empty)
             throw new ArgumentException("ProductId must be set", nameof(productId));
 
-        var client = _bus.CreateRequestClient<EnableProductRequest>();
+        var client = _clientFactory.CreateRequestClient<EnableProductRequest>();
 
         try
         {
@@ -208,7 +208,7 @@ public class MassTransitProductCommandService : IProductCommandService
         if (productId == Guid.Empty)
             throw new ArgumentException("ProductId must be set", nameof(productId));
 
-        var client = _bus.CreateRequestClient<DisableProductRequest>();
+        var client = _clientFactory.CreateRequestClient<DisableProductRequest>();
 
         try
         {
@@ -233,7 +233,7 @@ public class MassTransitProductCommandService : IProductCommandService
         if (productId == Guid.Empty)
             throw new ArgumentException("ProductId must be set", nameof(productId));
 
-        var client = _bus.CreateRequestClient<DeleteProductRequest>();
+        var client = _clientFactory.CreateRequestClient<DeleteProductRequest>();
 
         try
         {
@@ -258,7 +258,7 @@ public class MassTransitProductCommandService : IProductCommandService
         if (productId == Guid.Empty)
             throw new ArgumentException("ProductId must be set", nameof(productId));
 
-        var client = _bus.CreateRequestClient<ProductStatusRequest>();
+        var client = _clientFactory.CreateRequestClient<ProductStatusRequest>();
 
         try
         {
