@@ -5,21 +5,23 @@
 namespace KbStore.Tests;
 
 using MassTransit;
+using MassTransit.Configuration;
+using MassTransit.Saga;
 using MassTransit.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 #pragma warning disable CS8618
-public abstract class TestBase
+public abstract class EventingTestBase
 {
     protected IServiceCollection Services;
     protected IServiceProvider? RootProvider;
     protected IServiceScope ScopedProvider;
-
+    
     protected ITestHarness Harness = null!;
     protected Exception? LastException;
 
-    protected TestBase()
+    protected EventingTestBase()
     {
         Services = new ServiceCollection();
     }
@@ -33,8 +35,13 @@ public abstract class TestBase
 
         Services.AddMassTransitTestHarness(conf =>
         {
+            conf.SetTestTimeouts(
+                testTimeout: TimeSpan.FromSeconds(5), 
+                testInactivityTimeout: TimeSpan.FromSeconds(1)
+            );
+
             conf.SetDefaultRequestTimeout(
-                RequestTimeout.After(ms:250)
+                timeout: RequestTimeout.After(ms:250)
             );
 
             OnHarnessCreating(conf);
@@ -53,7 +60,7 @@ public abstract class TestBase
 
         await Harness.Start();
         await OnPostSetup();
-
+        
         Arrange();
 
         LastException = null;
@@ -71,9 +78,8 @@ public abstract class TestBase
     public async Task Teardown()
     {
         await OnPreTeardown();
-
-        if (Harness is not null)
-            await Harness.Stop();
+        
+        await Harness.Stop();
 
         await OnPostTeardown();
 

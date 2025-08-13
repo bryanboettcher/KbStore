@@ -12,6 +12,7 @@ public sealed class InventoryEntity : SagaStateMachineInstance
     public uint RowVersion { get; set; }
     public int CurrentState { get; set; }
 
+    [Indexed]
     public string PartNumber { get; set; } = "";
     public string Description { get; set; } = "";
     public int StockQuantity { get; set; }

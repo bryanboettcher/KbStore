@@ -22,24 +22,15 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
 
         Event(() => Created, e => e.CorrelateBy((s, c) => s.PartNumber == c.Message.PartNumber).SelectId(_ => NewId.NextSequentialGuid()));
         Event(() => StatusRequested, e => e.CorrelateById(c => c.Message.InventoryId).OnMissingInstance(b => b.Execute(c => throw new InventoryNotFoundException(c.Message.InventoryId))));
-        
+
         Event(() => QuantityIncreased, ConfigureEvent);
         Event(() => QuantityDecreased, ConfigureEvent);
         Event(() => DescriptionUpdated, ConfigureEvent);
         Event(() => Held, ConfigureEvent);
         Event(() => Released, ConfigureEvent);
         Event(() => Deleted, ConfigureEvent);
-        
+
         Initially(
-            When(Created, context => context.Message.StockQuantity < 0)
-                .Then(context => throw InventoryValidationException.InvalidQuantity(context.Message.StockQuantity)),
-
-            When(Created, context => string.IsNullOrWhiteSpace(context.Message.PartNumber))
-                .Then(context => throw InventoryValidationException.InvalidPartNumber(context.Message.PartNumber)),
-
-            When(Created, context => string.IsNullOrWhiteSpace(context.Message.Description))
-                .Then(context => throw InventoryValidationException.InvalidDescription(context.Message.Description)),
-
             When(Created)
                 .Then(SetProperties)
                 .TransitionTo(Available)
@@ -49,7 +40,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
         );
 
         During(Available,
-            // Handle duplicate creation attempts
+
             When(Created)
                 .Then(context => throw InventoryConflictException.DuplicatePartNumber(context.Message.PartNumber)),
 
@@ -125,7 +116,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
         );
 
         During(Discontinued,
-            
+
             When(Deleted)
                 .Then(UpdateTimestamp)
                 .RespondAsync(Message<DeleteInventoryResponse>)
@@ -146,9 +137,8 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
                 .Then(context => throw InventoryStateException.CannotModifyDiscontinuedItem(context.Saga.CorrelationId, "Hold"))
         );
 
-        // Handle Backordered state (minimal implementation for now)
         During(Backordered,
-            
+
             // Allow description updates
             When(DescriptionUpdated)
                 .Then(context => context.Saga.Description = context.Message.Description)
@@ -188,7 +178,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
 
         SetCompletedWhenFinalized();
     }
-    
+
     public Event<CreateInventoryRequest> Created { get; }
     public Event<IncreaseInventoryQuantityRequest> QuantityIncreased { get; }
     public Event<DecreaseInventoryQuantityRequest> QuantityDecreased { get; }
@@ -197,7 +187,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
     public Event<ReleaseInventoryRequest> Released { get; }
     public Event<DeleteInventoryRequest> Deleted { get; }
     public Event<InventoryStatusRequest> StatusRequested { get; }
-    
+
     public State Available { get; }
     public State OnHold { get; }
     public State Backordered { get; }
@@ -208,7 +198,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
         context.Saga.PartNumber = context.Message.PartNumber;
         context.Saga.Description = context.Message.Description;
         context.Saga.StockQuantity = context.Message.StockQuantity;
-        
+
         context.Saga.CreatedOn = context.Message.Timestamp;
     }
 
@@ -229,7 +219,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             context.Saga.CreatedOn,
             context.Saga.UpdatedOn
         });
-    
+
     private static void ConfigureEvent<TMessage>(IEventCorrelationConfigurator<InventoryEntity, TMessage> conf)
         where TMessage : class, InventoryCommand
     {
