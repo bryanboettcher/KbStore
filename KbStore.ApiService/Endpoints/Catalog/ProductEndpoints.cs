@@ -23,7 +23,7 @@ public static class ProductEndpoints
             payload.Sku!,
             payload.Name,
             payload.Dimensions,
-            payload.InventoryItemId,
+            payload.InventoryId,
             payload.StockThreshold,
             payload.LeadTime,
             cancellationToken
@@ -206,7 +206,7 @@ public class CreateProductPayload
     public string? Sku { get; set; }
     public string? Name { get; set; }
     public ProductDimensions? Dimensions { get; set; }
-    public Guid? InventoryItemId { get; set; }
+    public Guid? InventoryId { get; set; }
     public int? StockThreshold { get; set; }
     public TimeSpan? LeadTime { get; set; }
 

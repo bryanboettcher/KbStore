@@ -17,7 +17,7 @@ public abstract class Create_Tests : ProductEndpoints_Tests
         Sku = "TEST_SKU_123",
         Name = "Test Product",
         Dimensions = new ProductDimensions { Width = 10, Height = 5, Length = 15, Weight = 2.5m },
-        InventoryItemId = Guid.NewGuid(),
+        InventoryId = Guid.NewGuid(),
         StockThreshold = 10,
         LeadTime = TimeSpan.FromDays(7)
     };
@@ -49,7 +49,7 @@ public abstract class Create_Tests : ProductEndpoints_Tests
                     Sku = ValidPayload.Sku!,
                     Name = ValidPayload.Name,
                     Dimensions = ValidPayload.Dimensions,
-                    InventoryId = ValidPayload.InventoryItemId,
+                    InventoryId = ValidPayload.InventoryId,
                     StockThreshold = ValidPayload.StockThreshold,
                     LeadTime = ValidPayload.LeadTime,
                     IsStocked = true,

@@ -270,30 +270,4 @@ public class Product_Create : StateMachine_Tests<ProductStateMachine, ProductEnt
             (await Harness.Published.Any<ProductCreated>()).ShouldBeFalse();
         });
     }
-
-    public class When_creating_with_invalid_sku : Product_Create
-    {
-        protected override async Task Act()
-        {
-            Response = await Client.GetResponse<CreateProductResponse>(new
-            {
-                Sku = "",  // Invalid empty SKU
-                Name = "Test Product",
-                Dimensions = (ProductDimensions?)null,
-                InventoryId = (Guid?)null,
-                StockThreshold = (int?)null,
-                LeadTime = (TimeSpan?)null,
-                Timestamp = Now
-            });
-        }
-
-        [Test]
-        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
-        {
-            LastException.ShouldNotBeNull();
-            LastException.ShouldBeOfType<RequestFaultException>();
-
-            (await Harness.Published.Any<ProductCreated>()).ShouldBeFalse();
-        });
-    }
 }

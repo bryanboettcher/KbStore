@@ -1,7 +1,5 @@
 ﻿namespace KbStore.Catalog.Tests.Domains.Products;
 
-using global::KbStore.Catalog.Abstractions.Contracts;
-using global::KbStore.Catalog.Domains.Products;
 using KbStore.Catalog.Abstractions.Contracts;
 using KbStore.Catalog.Domains.Products;
 using KbStore.Catalog.Tests.Domains;

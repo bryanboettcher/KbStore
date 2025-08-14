@@ -60,7 +60,7 @@ public class CreateProductPayload_Tests
         var payload = new CreateProductPayload
         {
             Sku = "TEST_SKU",
-            InventoryItemId = null,
+            InventoryId = null,
             StockThreshold = 10
         };
 

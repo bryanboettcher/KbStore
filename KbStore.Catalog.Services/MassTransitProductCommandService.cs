@@ -33,6 +33,9 @@ public class MassTransitProductCommandService : IProductCommandService
         if (string.IsNullOrWhiteSpace(sku))
             throw new ProductValidationException("SKU must have a value");
 
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ProductValidationException("Name must have a value");
+
         if (stockThreshold < 0)
             throw ProductValidationException.InvalidStockThreshold(stockThreshold);
 
@@ -69,6 +72,9 @@ public class MassTransitProductCommandService : IProductCommandService
     {
         if (productId == Guid.Empty)
             throw new ArgumentException("ProductId must be set", nameof(productId));
+
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ProductValidationException("Name must have a value");
 
         var client = _clientFactory.CreateRequestClient<UpdateProductNameRequest>();
 

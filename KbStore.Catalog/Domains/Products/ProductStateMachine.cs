@@ -43,9 +43,7 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
         Event(() => InventoryReleased, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
 
         Initially(
-            When(Created, context => string.IsNullOrWhiteSpace(context.Message.Sku))
-                .Then(context => throw ProductValidationException.InvalidSku(context.Message.Sku)),
-
+            
             When(Created)
                 .Then(ctx => logger.LogInformation("Creating new Product"))
                 .Then(SetProperties)
