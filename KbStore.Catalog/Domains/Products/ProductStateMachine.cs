@@ -92,6 +92,7 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .Then(context => throw ProductConflictException.DuplicateSku(context.Message.Sku)),
 
             When(NameUpdated)
+                .Then(ctx => logger.LogInformation("Updating Product name to {name}", ctx.Message.Name))
                 .Then(context => context.Saga.Name = context.Message.Name)
                 .Then(UpdateTimestamp)
                 .RespondAsync(Message<UpdateProductResponse>)
@@ -104,6 +105,7 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .PublishAsync(Message<ProductDimensionsUpdated>),
 
             When(StockThresholdUpdated)
+                .Then(ctx => logger.LogInformation("Updating stock threshold to {threshold}", ctx.Message.StockThreshold))
                 .Then(context => context.Saga.StockThreshold = context.Message.StockThreshold)
                 .Then(UpdateTimestamp)
                 .RespondAsync(Message<UpdateProductResponse>)
@@ -131,11 +133,14 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .PublishAsync(Message<ProductDiscontinued>),
 
             When(InventoryQuantityChanged)
+                .Then(ctx => logger.LogInformation("Inventory quantity changed"))
                 .Then(UpdateStockQuantity)
                 .PublishAsync(Message<ProductAvailabilityChanged>),
 
             When(InventoryDiscontinued)
+                .Then(ctx => logger.LogInformation("Inventory discontinued"))
                 .Then(UpdateStockQuantity)
+                .Then(context => context.Saga.IsStocked = false)
                 .TransitionTo(Discontinued)
                 .PublishAsync(Message<ProductAvailabilityChanged>),
 
@@ -150,7 +155,6 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
 
             When(InventoryReleased)
                 .Then(UpdateStockQuantity)
-                .Then(context => context.Saga.IsStocked = StockQuantityValid(context.Saga))
                 .PublishAsync(Message<ProductAvailabilityChanged>)
         );
 
@@ -209,12 +213,10 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
 
             When(InventoryHeld)
                 .Then(UpdateStockQuantity)
-                .Then(context => context.Saga.IsStocked = false)
                 .PublishAsync(Message<ProductAvailabilityChanged>),
 
             When(InventoryReleased)
                 .Then(UpdateStockQuantity)
-                .Then(context => context.Saga.IsStocked = StockQuantityValid(context.Saga))
                 .PublishAsync(Message<ProductAvailabilityChanged>)
         );
 
@@ -319,14 +321,21 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
     private static void UpdateStockQuantity(BehaviorContext<ProductEntity, InventoryModel> context)
     {
         context.Saga.StockQuantity = context.Message.StockQuantity;
-    }
+        context.Saga.IsStocked = IsStocked();
+        return;
 
-    private static bool StockQuantityValid(ProductEntity saga)
-    {
-        return saga.InventoryId == null || 
-            (saga.StockQuantity ?? 0) >= (saga.StockThreshold ?? saga.Quantity);
-    }
+        bool IsStocked()
+        {
+            if (context.Saga.InventoryId == null)
+                return true;
 
+            if (context.Message.Status != Abstractions.Contracts.InventoryStatus.Available)
+                return false;
+
+            return (context.Saga.StockQuantity ?? 0) >= (context.Saga.StockThreshold ?? context.Saga.Quantity);
+        }
+    }
+    
     private static Task<SendTuple<TMessage>> Message<TMessage>(BehaviorContext<ProductEntity> context)
         where TMessage : class, ProductModel
         => context.Init<TMessage>(new
@@ -335,7 +344,8 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             context.Saga.Sku,
             context.Saga.Name,
             Dimensions = GetProductDimensions(context.Saga),
-            InventoryItemId = context.Saga.InventoryId,
+            context.Saga.InventoryId,
+            context.Saga.StockQuantity,
             context.Saga.StockThreshold,
             context.Saga.LeadTime,
             context.Saga.IsStocked,

@@ -26,7 +26,7 @@ public abstract class GetById_Tests : ProductEndpoints_Tests
                     Sku = "TEST_SKU_123",
                     Name = "Test Product",
                     Dimensions = new ProductDimensions { Width = 10, Height = 5, Length = 15, Weight = 2.5m },
-                    InventoryItemId = Guid.NewGuid(),
+                    InventoryId = Guid.NewGuid(),
                     StockThreshold = 10,
                     LeadTime = TimeSpan.FromDays(7),
                     IsStocked = true,

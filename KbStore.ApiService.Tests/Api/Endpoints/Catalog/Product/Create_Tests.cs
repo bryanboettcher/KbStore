@@ -49,7 +49,7 @@ public abstract class Create_Tests : ProductEndpoints_Tests
                     Sku = ValidPayload.Sku!,
                     Name = ValidPayload.Name,
                     Dimensions = ValidPayload.Dimensions,
-                    InventoryItemId = ValidPayload.InventoryItemId,
+                    InventoryId = ValidPayload.InventoryItemId,
                     StockThreshold = ValidPayload.StockThreshold,
                     LeadTime = ValidPayload.LeadTime,
                     IsStocked = true,

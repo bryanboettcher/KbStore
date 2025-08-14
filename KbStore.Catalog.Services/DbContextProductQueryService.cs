@@ -90,7 +90,7 @@ public class DbContextProductQueryService : IProductQueryService
         string Sku,
         string? Name,
         ProductDimensions? Dimensions,
-        Guid? InventoryItemId,
+        Guid? InventoryId,
         int? StockThreshold,
         TimeSpan? LeadTime,
         bool IsStocked,

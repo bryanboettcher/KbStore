@@ -43,7 +43,7 @@ public class Product_Create : StateMachine_Tests<ProductStateMachine, ProductEnt
             Response.ShouldNotBeNull();
             Response.Message.Sku.ShouldBe("TEST_SKU_123");
             Response.Message.Name.ShouldBe("Test Product");
-            Response.Message.InventoryItemId.ShouldBeNull();
+            Response.Message.InventoryId.ShouldBeNull();
             Response.Message.IsStocked.ShouldBeTrue();
             Response.Message.IsEnabled.ShouldBeTrue();
             Response.Message.IsAvailable.ShouldBeTrue();
@@ -97,7 +97,7 @@ public class Product_Create : StateMachine_Tests<ProductStateMachine, ProductEnt
                 Sku = "TEST_SKU_123",
                 Name = "Test Product with Inventory",
                 Dimensions = (ProductDimensions?)null,
-                InventoryId = ExistingId,
+                InventoryId = LinkedId,
                 StockThreshold = 10,
                 LeadTime = TimeSpan.FromDays(7),
                 Timestamp = Now
@@ -111,7 +111,7 @@ public class Product_Create : StateMachine_Tests<ProductStateMachine, ProductEnt
 
             Response.ShouldNotBeNull();
             Response.Message.Sku.ShouldBe("TEST_SKU_123");
-            Response.Message.InventoryItemId.ShouldBe(ExistingId);
+            Response.Message.InventoryId.ShouldBe(LinkedId);
             Response.Message.StockThreshold.ShouldBe(10);
             Response.Message.IsEnabled.ShouldBeFalse();
 
@@ -123,7 +123,7 @@ public class Product_Create : StateMachine_Tests<ProductStateMachine, ProductEnt
                 o.CorrelationId.ShouldBe(sagaId);
                 o.CurrentState.ShouldBe(ProductStates.Enabled);
                 o.Sku.ShouldBe("TEST_SKU_123");
-                o.InventoryId.ShouldBe(ExistingId);
+                o.InventoryId.ShouldBe(LinkedId);
                 o.StockQuantity.ShouldBe(50);
                 o.StockThreshold.ShouldBe(10);
                 o.LeadTime.ShouldBe(TimeSpan.FromDays(7));
@@ -154,7 +154,7 @@ public class Product_Create : StateMachine_Tests<ProductStateMachine, ProductEnt
                 Sku = "TEST_SKU_123",
                 Name = "Test Product with Bad Inventory",
                 Dimensions = (ProductDimensions?)null,
-                InventoryId = ExistingId,
+                InventoryId = LinkedId,
                 StockThreshold = 10,
                 LeadTime = (TimeSpan?)null,
                 Timestamp = Now
@@ -206,7 +206,7 @@ public class Product_Create : StateMachine_Tests<ProductStateMachine, ProductEnt
                 Sku = "TEST_SKU_123",
                 Name = "Test Product with Timeout",
                 Dimensions = (ProductDimensions?)null,
-                InventoryId = ExistingId,
+                InventoryId = LinkedId,
                 StockThreshold = 10,
                 LeadTime = (TimeSpan?)null,
                 Timestamp = Now

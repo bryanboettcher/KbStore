@@ -9,7 +9,7 @@ public class TestProductModel : ProductModel
     public string Sku { get; set; }
     public string? Name { get; set; }
     public ProductDimensions? Dimensions { get; set; }
-    public Guid? InventoryItemId { get; set; }
+    public Guid? InventoryId { get; set; }
     public int? StockThreshold { get; set; }
     public TimeSpan? LeadTime { get; set; }
     public bool IsStocked { get; set; }

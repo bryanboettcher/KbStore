@@ -13,6 +13,8 @@ public abstract class StateMachine_Tests<TStateMachine, TSaga> : EventingTestBas
     protected ISagaStateMachineTestHarness<TStateMachine, TSaga> SagaHarness = null!;
 
     protected static readonly Guid ExistingId = Guid.Parse("abcd1234-bbbb-cccc-dddd-deadbeef0001");
+    protected static readonly Guid LinkedId   = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-01234567dcba");
+
     protected static readonly DateTimeOffset Now = new(2025, 06, 16, 13, 30, 00, TimeSpan.Zero);
     protected static readonly DateTimeOffset Later = new(2025, 06, 16, 14, 00, 00, TimeSpan.Zero);
     
