@@ -9,7 +9,7 @@ using Shouldly;
 
 
 [TestFixture]
-public class Inventory_Delete : StateMachine_Tests
+public class Inventory_Delete : StateMachine_Tests<InventoryStateMachine, InventoryEntity>
 {
     protected IRequestClient<DeleteInventoryRequest> Client = null!;
     protected Response<DeleteInventoryResponse> Response = null!;
@@ -34,7 +34,7 @@ public class Inventory_Delete : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.Available;
                 entity.PartNumber = "DELETE_PART";
@@ -51,7 +51,7 @@ public class Inventory_Delete : StateMachine_Tests
             Response.Message.Status.ShouldBe(InventoryStatus.Discontinued);
             Response.Message.InventoryId.ShouldBe(ExistingId);
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);
@@ -69,7 +69,7 @@ public class Inventory_Delete : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.OnHold;
                 entity.PartNumber = "HELD_DELETE_PART";
@@ -86,7 +86,7 @@ public class Inventory_Delete : StateMachine_Tests
             Response.Message.Status.ShouldBe(InventoryStatus.Discontinued);
             Response.Message.InventoryId.ShouldBe(ExistingId);
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);
@@ -103,7 +103,7 @@ public class Inventory_Delete : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.Discontinued;
                 entity.PartNumber = "ALREADY_DISCONTINUED_PART";
@@ -121,7 +121,7 @@ public class Inventory_Delete : StateMachine_Tests
             Response.Message.InventoryId.ShouldBe(ExistingId);
 
             // Second delete should finalize the saga
-            (await InventorySagaHarness.NotExists(ExistingId)).ShouldNotBe(ExistingId);
+            (await SagaHarness.NotExists(ExistingId)).ShouldNotBe(ExistingId);
             
             (await Harness.Published.Any<InventoryDeleted>()).ShouldBeTrue();
         });

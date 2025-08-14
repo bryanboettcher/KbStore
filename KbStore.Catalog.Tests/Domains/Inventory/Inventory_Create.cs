@@ -10,7 +10,7 @@ using Shouldly;
 
 
 [TestFixture]
-public class Inventory_Create : StateMachine_Tests
+public class Inventory_Create : StateMachine_Tests<InventoryStateMachine, InventoryEntity>
 {
     protected IRequestClient<CreateInventoryRequest> Client = null!;
     protected Response<CreateInventoryResponse> Response = null!;
@@ -43,7 +43,7 @@ public class Inventory_Create : StateMachine_Tests
             Response.Message.StockQuantity.ShouldBe(50);
 
             var sagaId = Response.Message.InventoryId;
-            InventorySagaHarness.Sagas.Contains(sagaId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(sagaId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(sagaId);
@@ -63,7 +63,7 @@ public class Inventory_Create : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.Available;
                 entity.PartNumber = "TEST_123";
@@ -78,7 +78,7 @@ public class Inventory_Create : StateMachine_Tests
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<RequestFaultException>();
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);

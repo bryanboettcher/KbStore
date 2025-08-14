@@ -1,8 +1,7 @@
 ﻿namespace KbStore.Catalog.Tests.Domains.Products;
 
-using KbStore.Catalog.Abstractions.Contracts;
-using KbStore.Catalog.Domains.Products;
-using KbStore.Catalog.Tests.Domains;
+using Abstractions.Contracts;
+using Catalog.Domains.Products;
 using MassTransit;
 using MassTransit.Testing;
 using NUnit.Framework;
@@ -10,7 +9,7 @@ using Shouldly;
 
 
 [TestFixture]
-public class Product_Create : StateMachine_Tests
+public class Product_Create : StateMachine_Tests<ProductStateMachine, ProductEntity>
 {
     protected IRequestClient<CreateProductRequest> Client = null!;
     protected Response<CreateProductResponse> Response = null!;
@@ -50,7 +49,7 @@ public class Product_Create : StateMachine_Tests
             Response.Message.IsAvailable.ShouldBeTrue();
 
             var sagaId = Response.Message.ProductId;
-            ProductSagaHarness.Sagas.Contains(sagaId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(sagaId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(sagaId);
@@ -77,6 +76,7 @@ public class Product_Create : StateMachine_Tests
 
             configurator.AddHandler<InventoryStatusRequest>(async context =>
             {
+                LogContext.Warning?.Log("Faking response");
                 await context.RespondAsync<InventoryStatusResponse>(new
                 {
                     InventoryId = context.Message.InventoryId,
@@ -116,8 +116,8 @@ public class Product_Create : StateMachine_Tests
             Response.Message.IsEnabled.ShouldBeFalse();
 
             var sagaId = Response.Message.ProductId;
-            (await ProductSagaHarness.Exists(sagaId, s => s.Enabled)).ShouldNotBeNull();
-            ProductSagaHarness.Sagas.Contains(sagaId).ShouldSatisfyAllConditions(o =>
+            (await SagaHarness.Exists(sagaId, s => s.Enabled)).ShouldNotBeNull();
+            SagaHarness.Sagas.Contains(sagaId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(sagaId);
@@ -172,9 +172,9 @@ public class Product_Create : StateMachine_Tests
 
             var sagaId = Response.Message.ProductId;
             
-            (await ProductSagaHarness.Exists(sagaId, s => s.Disabled)).ShouldNotBeNull();
+            (await SagaHarness.Exists(sagaId, s => s.Disabled)).ShouldNotBeNull();
 
-            ProductSagaHarness.Sagas.Contains(sagaId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(sagaId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(sagaId);
@@ -223,8 +223,8 @@ public class Product_Create : StateMachine_Tests
             Response.Message.IsAvailable.ShouldBeFalse();
 
             var sagaId = Response.Message.ProductId;
-            (await ProductSagaHarness.Exists(sagaId, s => s.Disabled)).ShouldNotBeNull();
-            ProductSagaHarness.Sagas.Contains(sagaId).ShouldSatisfyAllConditions(o =>
+            (await SagaHarness.Exists(sagaId, s => s.Disabled)).ShouldNotBeNull();
+            SagaHarness.Sagas.Contains(sagaId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(sagaId);
@@ -243,7 +243,7 @@ public class Product_Create : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<ProductEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<ProductEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = ProductStates.Enabled;
                 entity.Sku = "TEST_SKU_123";
@@ -258,7 +258,7 @@ public class Product_Create : StateMachine_Tests
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<RequestFaultException>();
 
-            ProductSagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);

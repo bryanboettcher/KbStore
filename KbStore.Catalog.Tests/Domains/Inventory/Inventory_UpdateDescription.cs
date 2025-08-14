@@ -9,7 +9,7 @@ using Shouldly;
 
 
 [TestFixture]
-public class Inventory_UpdateDescription : StateMachine_Tests
+public class Inventory_UpdateDescription : StateMachine_Tests<InventoryStateMachine, InventoryEntity>
 {
     protected IRequestClient<UpdateInventoryDescriptionRequest> Client = null!;
     protected Response<UpdateInventoryResponse> Response = null!;
@@ -35,7 +35,7 @@ public class Inventory_UpdateDescription : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.Available;
                 entity.PartNumber = "DESC_PART";
@@ -53,7 +53,7 @@ public class Inventory_UpdateDescription : StateMachine_Tests
             Response.Message.Description.ShouldBe("Updated Description");
             Response.Message.InventoryId.ShouldBe(ExistingId);
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);
@@ -71,7 +71,7 @@ public class Inventory_UpdateDescription : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.OnHold;
                 entity.PartNumber = "HELD_DESC_PART";
@@ -89,7 +89,7 @@ public class Inventory_UpdateDescription : StateMachine_Tests
             Response.Message.Description.ShouldBe("Updated Description");
             Response.Message.InventoryId.ShouldBe(ExistingId);
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);
@@ -107,7 +107,7 @@ public class Inventory_UpdateDescription : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.Backordered;
                 entity.PartNumber = "BACKORDER_DESC_PART";
@@ -124,7 +124,7 @@ public class Inventory_UpdateDescription : StateMachine_Tests
             Response.ShouldNotBeNull();
             Response.Message.Description.ShouldBe("Updated Description");
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);
@@ -142,7 +142,7 @@ public class Inventory_UpdateDescription : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.Discontinued;
                 entity.PartNumber = "DISCONTINUED_DESC_PART";
@@ -157,7 +157,7 @@ public class Inventory_UpdateDescription : StateMachine_Tests
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<RequestFaultException>();
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);

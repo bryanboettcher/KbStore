@@ -9,7 +9,7 @@ using Shouldly;
 
 
 [TestFixture]
-public class Inventory_Release : StateMachine_Tests
+public class Inventory_Release : StateMachine_Tests<InventoryStateMachine, InventoryEntity>
 {
     protected IRequestClient<ReleaseInventoryRequest> Client = null!;
     protected Response<ReleaseInventoryResponse> Response = null!;
@@ -34,7 +34,7 @@ public class Inventory_Release : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.OnHold;
                 entity.PartNumber = "RELEASE_PART";
@@ -51,7 +51,7 @@ public class Inventory_Release : StateMachine_Tests
             Response.Message.Status.ShouldBe(InventoryStatus.Available);
             Response.Message.InventoryId.ShouldBe(ExistingId);
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);
@@ -69,7 +69,7 @@ public class Inventory_Release : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.Available;
                 entity.PartNumber = "AVAILABLE_RELEASE_PART";
@@ -83,7 +83,7 @@ public class Inventory_Release : StateMachine_Tests
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<RequestFaultException>();
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);
@@ -100,7 +100,7 @@ public class Inventory_Release : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.Backordered;
                 entity.PartNumber = "BACKORDER_RELEASE_PART";
@@ -114,7 +114,7 @@ public class Inventory_Release : StateMachine_Tests
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<RequestFaultException>();
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);
@@ -131,7 +131,7 @@ public class Inventory_Release : StateMachine_Tests
         {
             base.Arrange();
 
-            Harness.AddSagaInstance<InventoryEntity>(ExistingId, entity =>
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = InventoryStates.Discontinued;
                 entity.PartNumber = "DISCONTINUED_RELEASE_PART";
@@ -145,7 +145,7 @@ public class Inventory_Release : StateMachine_Tests
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<RequestFaultException>();
 
-            InventorySagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
                 o.ShouldNotBeNull();
                 o.CorrelationId.ShouldBe(ExistingId);
