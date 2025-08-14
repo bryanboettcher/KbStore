@@ -54,7 +54,7 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                     
                     t => t.Then(ctx => logger.LogWarning("Calling to Inventory to verify status"))
                         .TransitionTo(InventoryStatus.Pending)
-                        .Request(InventoryStatus, c => c.Init<InventoryStatusRequest>(new { c.Message.InventoryId })),
+                        .Request(InventoryStatus, c => c.Init<InventoryStatusRequest>(new { c.Saga.InventoryId })),
                         
                     f => f.Then(ctx => logger.LogInformation("No Inventory is attached, finishing creation"))
                         .Then(context => context.Saga.IsStocked = true)   // non-inventory products are always stocked unless disabled
@@ -323,7 +323,8 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
 
     private static bool StockQuantityValid(ProductEntity saga)
     {
-        return (saga.StockQuantity ?? 0) >= (saga.StockThreshold ?? 0);
+        return saga.InventoryId == null || 
+            (saga.StockQuantity ?? 0) >= (saga.StockThreshold ?? saga.Quantity);
     }
 
     private static Task<SendTuple<TMessage>> Message<TMessage>(BehaviorContext<ProductEntity> context)
