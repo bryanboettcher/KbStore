@@ -17,19 +17,22 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             Discontinued
         );
 
-        Request(() => InventoryStatus, s => s.InventoryStatusId, c =>
-        {
-            c.Timeout = TimeSpan.FromSeconds(1);
-            c.Completed = m => m.OnMissingInstance(b => b.Discard());
-            c.Faulted = m => m.OnMissingInstance(b => b.Discard());
-            c.TimeoutExpired = m => m.OnMissingInstance(b => b.Discard());
-        });
+        //Request(() => InventoryStatus, s => s.InventoryStatusId, c =>
+        //{
+        //    c.ClearRequestIdOnFaulted = true;
+        //    c.Completed = m => m.OnMissingInstance(b => b.Discard());
+        //    c.Faulted = m => m.OnMissingInstance(b => b.Discard());
+        //    c.TimeoutExpired = m => m.OnMissingInstance(b => b.Discard());
+        //});
+
+        Request(() => InventoryStatus);
 
         Event(() => Created, e => e.CorrelateBy((s, c) => s.Sku == c.Message.Sku).SelectId(_ => NewId.NextSequentialGuid()));
         Event(() => StatusRequested, e => e.CorrelateById(c => c.Message.ProductId).OnMissingInstance(b => b.Execute(c => throw new ProductNotFoundException(c.Message.ProductId))));
 
         Event(() => NameUpdated, ConfigureEvent);
         Event(() => DimensionsUpdated, ConfigureEvent);
+        Event(() => QuantityUpdated, ConfigureEvent);
         Event(() => StockThresholdUpdated, ConfigureEvent);
         Event(() => LeadTimeUpdated, ConfigureEvent);
         Event(() => EnableRequested, ConfigureEvent);
@@ -45,12 +48,10 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
         Initially(
             
             When(Created)
-                .Then(ctx => logger.LogInformation("Creating new Product"))
                 .Then(SetProperties)
-                .Then(UpdateTimestamp)
                 .IfElse(ctx => ctx.Saga.InventoryId is not null,
                     
-                    t => t.Then(ctx => logger.LogWarning("Calling to Inventory to verify status"))
+                    t => t.Then(ctx => logger.LogInformation("Calling to Inventory for {inventoryId} to verify status", ctx.Saga.InventoryId))
                         .TransitionTo(InventoryStatus.Pending)
                         .Request(InventoryStatus, c => c.Init<InventoryStatusRequest>(new { c.Saga.InventoryId })),
                         
@@ -101,6 +102,12 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .Then(UpdateTimestamp)
                 .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductDimensionsUpdated>),
+
+            When(QuantityUpdated)
+                .Then(context => context.Saga.Quantity = context.Message.Quantity)
+                .Then(UpdateTimestamp)
+                .RespondAsync(Message<UpdateProductResponse>)
+                .PublishAsync(Message<ProductQuantityUpdated>),
 
             When(StockThresholdUpdated)
                 .Then(ctx => logger.LogInformation("Updating stock threshold to {threshold}", ctx.Message.StockThreshold))
@@ -169,6 +176,12 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
                 .RespondAsync(Message<UpdateProductResponse>)
                 .PublishAsync(Message<ProductDimensionsUpdated>),
 
+            When(QuantityUpdated)
+                .Then(context => context.Saga.Quantity = context.Message.Quantity)
+                .Then(UpdateTimestamp)
+                .RespondAsync(Message<UpdateProductResponse>)
+                .PublishAsync(Message<ProductQuantityUpdated>),
+
             When(StockThresholdUpdated)
                 .Then(context => context.Saga.StockThreshold = context.Message.StockThreshold)
                 .Then(UpdateTimestamp)
@@ -236,6 +249,9 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             When(DimensionsUpdated)
                 .Then(context => throw ProductStateException.CannotModifyDiscontinuedProduct(context.Saga.CorrelationId, "UpdateDimensions")),
 
+            When(QuantityUpdated)
+                .Then(context => throw ProductStateException.CannotModifyDiscontinuedProduct(context.Saga.CorrelationId, "UpdateQuantity")),
+
             When(StockThresholdUpdated)
                 .Then(context => throw ProductStateException.CannotModifyDiscontinuedProduct(context.Saga.CorrelationId, "UpdateStockThreshold")),
 
@@ -260,6 +276,7 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
     public Event<CreateProductRequest> Created { get; }
     public Event<UpdateProductNameRequest> NameUpdated { get; }
     public Event<UpdateProductDimensionsRequest> DimensionsUpdated { get; }
+    public Event<UpdateProductQuantityRequest> QuantityUpdated { get; }
     public Event<UpdateProductStockThresholdRequest> StockThresholdUpdated { get; }
     public Event<UpdateProductLeadTimeRequest> LeadTimeUpdated { get; }
     public Event<EnableProductRequest> EnableRequested { get; }
@@ -284,6 +301,7 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
     {
         context.Saga.Sku = context.Message.Sku;
         context.Saga.Name = context.Message.Name;
+        context.Saga.Quantity = context.Message.Quantity;
         context.Saga.InventoryId = context.Message.InventoryId;
         context.Saga.StockThreshold = context.Message.StockThreshold;
         context.Saga.LeadTime = context.Message.LeadTime;
@@ -291,6 +309,7 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
         UpdateDimensions(context.Saga, context.Message.Dimensions);
 
         context.Saga.CreatedOn = context.Message.Timestamp;
+        context.Saga.UpdatedOn = context.Message.Timestamp;
     }
 
     private static void UpdateDimensions(ProductEntity saga, ProductDimensions? dimensions)
@@ -343,6 +362,7 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             context.Saga.Name,
             Dimensions = GetProductDimensions(context.Saga),
             context.Saga.InventoryId,
+            context.Saga.Quantity,
             context.Saga.StockQuantity,
             context.Saga.StockThreshold,
             context.Saga.LeadTime,

@@ -78,5 +78,8 @@ public class ProductSagaMap : SagaClassMap<ProductEntity>
             .WithMany()
             .HasForeignKey("InventoryId")
             .OnDelete(DeleteBehavior.ClientSetNull);
+
+        entity.HasIndex(x => x.InventoryStatusId)
+            .IsUnique();
     }
 }

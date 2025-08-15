@@ -15,6 +15,7 @@ public abstract class ProductCommandService_Create : CommandService_Tests<MassTr
     protected string Sku = null!;
     protected string Name = null!;
     protected ProductDimensions? Dimensions;
+    protected int Quantity;
     protected Guid? InventoryId;
     protected int? StockThreshold;
     protected TimeSpan? LeadTime;
@@ -26,6 +27,7 @@ public abstract class ProductCommandService_Create : CommandService_Tests<MassTr
         Sku = "TEST_SKU_123";
         Name = "Test Product";
         Dimensions = new ProductDimensions { Width = 10, Height = 5, Length = 15, Weight = 2.5m };
+        Quantity = 1;
         InventoryId = null;
         StockThreshold = null;
         LeadTime = null;
@@ -33,7 +35,7 @@ public abstract class ProductCommandService_Create : CommandService_Tests<MassTr
 
     protected override async Task Act()
     {
-        Result = await Subject.CreateAsync(Sku, Name, Dimensions, InventoryId, StockThreshold, LeadTime);
+        Result = await Subject.CreateAsync(Sku, Name, Dimensions, Quantity, InventoryId, StockThreshold, LeadTime);
     }
 
     public class When_creating_valid_product_without_inventory : ProductCommandService_Create

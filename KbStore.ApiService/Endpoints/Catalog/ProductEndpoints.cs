@@ -22,7 +22,8 @@ public static class ProductEndpoints
         var result = await commandService.CreateAsync(
             payload.Sku!,
             payload.Name,
-            payload.Dimensions,
+            payload.Dimensions, 
+            payload.Quantity,
             payload.InventoryId,
             payload.StockThreshold,
             payload.LeadTime,
@@ -59,6 +60,22 @@ public static class ProductEndpoints
         CancellationToken cancellationToken = default)
     {
         var result = await commandService.UpdateDimensionsAsync(id, dimensions, cancellationToken)
+            .ConfigureAwait(false);
+
+        return Results.Ok(result);
+    }
+
+    [ProducesResponseType<ProductModel>(200)]
+    [ProducesResponseType<ProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(404)]
+    [ProducesResponseType<ProblemDetails>(500)]
+    public static async Task<IResult> UpdateQuantity(
+        [FromRoute] Guid id,
+        [FromBody] int quantity,
+        [FromServices] IProductCommandService commandService,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await commandService.UpdateQuantityAsync(id, quantity, cancellationToken)
             .ConfigureAwait(false);
 
         return Results.Ok(result);
@@ -189,6 +206,7 @@ public static class ProductEndpoints
         // Update operations
         group.MapPatch("{id:guid}/name", UpdateName);
         group.MapPatch("{id:guid}/dimensions", UpdateDimensions);
+        group.MapPatch("{id:guid}/quantity", UpdateQuantity);
         group.MapPatch("{id:guid}/stock-threshold", UpdateStockThreshold);
         group.MapPatch("{id:guid}/lead-time", UpdateLeadTime);
 
@@ -206,6 +224,7 @@ public class CreateProductPayload
     public string? Sku { get; set; }
     public string? Name { get; set; }
     public ProductDimensions? Dimensions { get; set; }
+    public int Quantity { get; set; }
     public Guid? InventoryId { get; set; }
     public int? StockThreshold { get; set; }
     public TimeSpan? LeadTime { get; set; }

@@ -46,8 +46,8 @@ public static class ProductRequestFaultExceptionExtensions
     private static ProductStateException RecreateStateException(string message, IDictionary<string, object> data)
     {
         var productId = data.TryGetValue("productId", out var idObj) && idObj is Guid id ? id : Guid.Empty;
-        var currentState = data.TryGetValue("currentState", out var stateObj) ? stateObj?.ToString() : "Unknown";
-        var operation = data.TryGetValue("attemptedOperation", out var opObj) ? opObj?.ToString() : "Unknown";
+        var currentState = (data.TryGetValue("currentState", out var stateObj) ? stateObj?.ToString() : null) ?? "Unknown";
+        var operation = (data.TryGetValue("attemptedOperation", out var opObj) ? opObj?.ToString() : null) ?? "Unknown";
 
         return new ProductStateException(productId, currentState, operation);
     }

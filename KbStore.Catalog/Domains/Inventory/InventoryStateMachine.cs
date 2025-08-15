@@ -11,7 +11,7 @@ using MassTransit;
 
 public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEntity>
 {
-    public InventoryStateMachine()
+    public InventoryStateMachine(ILogger<InventoryStateMachine> logger)
     {
         InstanceState(m => m.CurrentState,
             Available,
@@ -118,7 +118,6 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
         During(Discontinued,
 
             When(Deleted)
-                .Then(ctx => LogContext.Info?.Log("Deleting discontinued instance"))
                 .Then(UpdateTimestamp)
                 .RespondAsync(Message<DeleteInventoryResponse>)
                 .PublishAsync(Message<InventoryDeleted>)
@@ -174,6 +173,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
 
         DuringAny(
             When(StatusRequested)
+                .Then(ctx => logger.LogInformation("Returning Inventory status message for {inventoryId}", ctx.Saga.CorrelationId))
                 .RespondAsync(Message<InventoryStatusResponse>)
         );
 

@@ -12,15 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace KbStore.Catalog.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250805161041_Initial")]
-    partial class Initial
+    [Migration("20250815223758_Indexes")]
+    partial class Indexes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.7")
+                .HasAnnotation("ProductVersion", "9.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -71,21 +71,33 @@ namespace KbStore.Catalog.Migrations
                     b.Property<Guid>("CorrelationId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("CurrentState")
                         .HasColumnType("integer");
 
-                    b.Property<float?>("Depth")
-                        .HasColumnType("real");
+                    b.Property<decimal?>("Depth")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
-                    b.Property<float?>("Height")
-                        .HasColumnType("real");
+                    b.Property<decimal?>("Height")
+                        .HasColumnType("numeric");
 
                     b.Property<Guid?>("InventoryId")
                         .HasColumnType("uuid");
+
+                    b.Property<Guid?>("InventoryStatusId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsStocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<TimeSpan?>("LeadTime")
+                        .HasColumnType("interval");
 
                     b.Property<string>("Name")
                         .HasMaxLength(200)
@@ -111,15 +123,27 @@ namespace KbStore.Catalog.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<int?>("StockQuantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("StockThreshold")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedOn")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<decimal?>("Weight")
                         .HasColumnType("numeric");
 
-                    b.Property<float?>("Width")
-                        .HasColumnType("real");
+                    b.Property<decimal?>("Width")
+                        .HasColumnType("numeric");
 
                     b.HasKey("CorrelationId");
 
                     b.HasIndex("InventoryId");
+
+                    b.HasIndex("InventoryStatusId")
+                        .IsUnique();
 
                     b.HasIndex("Sku")
                         .IsUnique();

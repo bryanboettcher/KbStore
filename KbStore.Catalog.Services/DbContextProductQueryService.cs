@@ -36,23 +36,25 @@ public class DbContextProductQueryService : IProductQueryService
                 entity.Height,
                 entity.Depth,
                 entity.Weight,
-                InventoryItemId = entity.InventoryId,
+                entity.Quantity,
+                entity.InventoryId,
                 entity.StockThreshold,
                 entity.LeadTime,
                 entity.IsStocked,
-                CurrentState = entity.CurrentState,
+                entity.CurrentState,
                 entity.CreatedOn,
                 entity.UpdatedOn
             })
             .AsAsyncEnumerable();
 
         var results = serverQuery
-            .Select(x => new ProductReadModel( // Constructor handles translation
+            .Select(x => new ProductReadModel(
                 x.ProductId,
                 x.Sku,
                 x.Name,
                 GetProductDimensions(x.Width, x.Height, x.Depth, x.Weight),
-                x.InventoryItemId,
+                x.Quantity,
+                x.InventoryId,
                 x.StockThreshold,
                 x.LeadTime,
                 x.IsStocked,
@@ -90,6 +92,7 @@ public class DbContextProductQueryService : IProductQueryService
         string Sku,
         string? Name,
         ProductDimensions? Dimensions,
+        int Quantity,
         Guid? InventoryId,
         int? StockThreshold,
         TimeSpan? LeadTime,
@@ -98,13 +101,12 @@ public class DbContextProductQueryService : IProductQueryService
         DateTimeOffset CreatedOn,
         DateTimeOffset UpdatedOn) : ProductModel
     {
-        // Translation happens in the property
         public bool IsEnabled
             => CurrentState switch
             {
-                3 => true, // Enabled
-                4 => false, // Disabled
-                6 => false, // Discontinued
+                ProductStates.Enabled => true,
+                ProductStates.Disabled => false,
+                ProductStates.Discontinued => false,
                 _ => false
             };
 

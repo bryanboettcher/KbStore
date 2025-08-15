@@ -16,6 +16,7 @@ public abstract class Create_Tests : ProductEndpoints_Tests
     {
         Sku = "TEST_SKU_123",
         Name = "Test Product",
+        Quantity = 1,
         Dimensions = new ProductDimensions { Width = 10, Height = 5, Length = 15, Weight = 2.5m },
         InventoryId = Guid.NewGuid(),
         StockThreshold = 10,
@@ -38,7 +39,8 @@ public abstract class Create_Tests : ProductEndpoints_Tests
                 .CreateAsync(
                     Arg.Any<string>(),
                     Arg.Any<string?>(),
-                    Arg.Any<ProductDimensions?>(),
+                    Arg.Any<ProductDimensions?>(), 
+                    Arg.Any<int>(),
                     Arg.Any<Guid?>(),
                     Arg.Any<int?>(),
                     Arg.Any<TimeSpan?>(),
@@ -93,6 +95,7 @@ public abstract class Create_Tests : ProductEndpoints_Tests
                     Arg.Any<string>(),
                     Arg.Any<string?>(),
                     Arg.Any<ProductDimensions?>(),
+                    Arg.Any<int>(),
                     Arg.Any<Guid?>(),
                     Arg.Any<int?>(),
                     Arg.Any<TimeSpan?>(),
@@ -109,6 +112,7 @@ public abstract class Create_Tests : ProductEndpoints_Tests
                     Arg.Any<string>(),
                     Arg.Any<string?>(),
                     Arg.Any<ProductDimensions?>(),
+                    Arg.Any<int>(),
                     Arg.Any<Guid?>(),
                     Arg.Any<int?>(),
                     Arg.Any<TimeSpan?>(),

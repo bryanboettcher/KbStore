@@ -36,16 +36,23 @@ namespace KbStore.Catalog.Migrations
                     CorrelationId = table.Column<Guid>(type: "uuid", nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     CurrentState = table.Column<int>(type: "integer", nullable: false),
+                    InventoryStatusId = table.Column<Guid>(type: "uuid", nullable: true),
                     Sku = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     Quantity = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     Price = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     Weight = table.Column<decimal>(type: "numeric", nullable: true),
-                    Height = table.Column<float>(type: "real", nullable: true),
-                    Width = table.Column<float>(type: "real", nullable: true),
-                    Depth = table.Column<float>(type: "real", nullable: true),
-                    InventoryId = table.Column<Guid>(type: "uuid", nullable: true)
+                    Height = table.Column<decimal>(type: "numeric", nullable: true),
+                    Width = table.Column<decimal>(type: "numeric", nullable: true),
+                    Depth = table.Column<decimal>(type: "numeric", nullable: true),
+                    InventoryId = table.Column<Guid>(type: "uuid", nullable: true),
+                    StockQuantity = table.Column<int>(type: "integer", nullable: true),
+                    StockThreshold = table.Column<int>(type: "integer", nullable: true),
+                    LeadTime = table.Column<TimeSpan>(type: "interval", nullable: true),
+                    IsStocked = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedOn = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedOn = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {

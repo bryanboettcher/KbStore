@@ -14,10 +14,10 @@ public interface IProductCommandService
     /// </summary>
     /// <exception cref="ProductValidationException">When business rules are violated</exception>
     /// <exception cref="ProductConflictException">When SKU already exists</exception>
-    Task<ProductModel> CreateAsync(
-        string sku,
+    Task<ProductModel> CreateAsync(string sku,
         string? name,
         ProductDimensions? dimensions,
+        int quantity,
         Guid? inventoryId,
         int? stockThreshold,
         TimeSpan? leadTime,
@@ -42,6 +42,17 @@ public interface IProductCommandService
     Task<ProductModel> UpdateDimensionsAsync(
         Guid productId,
         ProductDimensions? dimensions,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the quantity for an existing product.
+    /// </summary>
+    /// <exception cref="ProductNotFoundException">When product doesn't exist</exception>
+    /// <exception cref="ProductValidationException">When quantity is invalid</exception>
+    /// <exception cref="ProductStateException">When product is discontinued</exception>
+    Task<ProductModel> UpdateQuantityAsync(
+        Guid productId,
+        int quantity,
         CancellationToken cancellationToken = default);
 
     /// <summary>

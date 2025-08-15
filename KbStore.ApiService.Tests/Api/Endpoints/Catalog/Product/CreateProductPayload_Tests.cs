@@ -55,7 +55,7 @@ public class CreateProductPayload_Tests
     }
 
     [Test]
-    public void InventoryItemId_can_be_null()
+    public void InventoryId_can_be_null()
     {
         var payload = new CreateProductPayload
         {

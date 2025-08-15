@@ -21,10 +21,10 @@ public class MassTransitProductCommandService : IProductCommandService
         _now = now ?? throw new ArgumentNullException(nameof(now));
     }
 
-    public async Task<ProductModel> CreateAsync(
-        string sku,
+    public async Task<ProductModel> CreateAsync(string sku,
         string? name,
         ProductDimensions? dimensions,
+        int quantity,
         Guid? inventoryId,
         int? stockThreshold,
         TimeSpan? leadTime,
@@ -35,6 +35,9 @@ public class MassTransitProductCommandService : IProductCommandService
 
         if (string.IsNullOrWhiteSpace(name))
             throw new ProductValidationException("Name must have a value");
+
+        if (quantity <= 0)
+            throw new ProductValidationException("Quantity must be a positive value");
 
         if (stockThreshold < 0)
             throw ProductValidationException.InvalidStockThreshold(stockThreshold);
@@ -51,6 +54,7 @@ public class MassTransitProductCommandService : IProductCommandService
                 Sku = sku,
                 Name = name,
                 Dimensions = dimensions,
+                Quantity = quantity,
                 InventoryId = inventoryId,
                 StockThreshold = stockThreshold,
                 LeadTime = leadTime,
@@ -84,6 +88,37 @@ public class MassTransitProductCommandService : IProductCommandService
             {
                 ProductId = productId,
                 Name = name,
+                Timestamp = _now()
+            }, cancellationToken).ConfigureAwait(false);
+
+            return response.Message;
+        }
+        catch (RequestFaultException e)
+        {
+            throw e.ToProductException();
+        }
+    }
+
+    public async Task<ProductModel> UpdateQuantityAsync(
+        Guid productId,
+        int quantity,
+        CancellationToken cancellationToken = default)
+    {
+        if (productId == Guid.Empty)
+            throw new ArgumentException("ProductId must be set");
+
+        if (quantity <= 0)
+            throw new ProductValidationException("Quantity must be a positive value");
+
+        var client = _clientFactory.CreateRequestClient<UpdateProductQuantityRequest>();
+
+        try
+        {
+
+            var response = await client.GetResponse<UpdateProductResponse>(new
+            {
+                ProductId = productId,
+                Quantity = quantity,
                 Timestamp = _now()
             }, cancellationToken).ConfigureAwait(false);
 

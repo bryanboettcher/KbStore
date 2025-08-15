@@ -5,7 +5,6 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-
 public sealed class InventoryEntity : SagaStateMachineInstance
 {
     public Guid CorrelationId { get; set; }

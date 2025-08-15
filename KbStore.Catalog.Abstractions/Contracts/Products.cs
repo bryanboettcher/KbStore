@@ -39,6 +39,7 @@ public interface ProductModel
     string Sku { get; }
     string? Name { get; }
     ProductDimensions? Dimensions { get; }
+    int Quantity { get; }
     Guid? InventoryId { get; }
     int? StockThreshold { get; }
     TimeSpan? LeadTime { get; }
@@ -57,14 +58,16 @@ public interface ProductFailure : RequestFailureBase;
 
 #region Creating Products
 
-public interface CreateProductRequest : ProductCommand
+public interface CreateProductRequest
 {
     string Sku { get; }
     string? Name { get; }
     ProductDimensions? Dimensions { get; }
+    int Quantity { get; }
     Guid? InventoryId { get; }
     int? StockThreshold { get; }
     TimeSpan? LeadTime { get; }
+    DateTimeOffset Timestamp { get; }
 }
 
 public interface CreateProductResponse : ProductModel;
@@ -96,7 +99,12 @@ public interface UpdateProductLeadTimeRequest : ProductCommand
 {
     TimeSpan? LeadTime { get; }
 }
+public interface UpdateProductQuantityRequest : ProductCommand
+{
+    int Quantity { get; }
+}
 
+public interface ProductQuantityUpdated : ProductUpdated;
 public interface UpdateProductResponse : ProductModel;
 public interface ProductNameUpdated : ProductUpdated;
 public interface ProductDimensionsUpdated : ProductUpdated;
