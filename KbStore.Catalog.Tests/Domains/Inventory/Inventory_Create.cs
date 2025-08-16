@@ -75,8 +75,14 @@ public class Inventory_Create : StateMachine_Tests<InventoryStateMachine, Invent
         [Test]
         public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
         {
-            LastException.ShouldNotBeNull();
-            LastException.ShouldBeOfType<RequestFaultException>();
+            LastException.ShouldBeNull();
+
+            Response.ShouldNotBeNull();
+            Response.Message.ShouldSatisfyAllConditions(o =>
+            {
+                o.PartNumber.ShouldBe("TEST_123");
+                o.Status.ShouldBe(InventoryStatus.Available);
+            });
 
             SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
             {
@@ -91,4 +97,42 @@ public class Inventory_Create : StateMachine_Tests<InventoryStateMachine, Invent
             (await Harness.Published.Any<InventoryCreated>()).ShouldBeFalse();
         });
     }
+
+    public class When_creating_discontinued_item : Inventory_Create
+    {
+        protected override void Arrange()
+        {
+            base.Arrange();
+
+            Harness.AddOrUpdateSagaInstance<InventoryEntity>(ExistingId, entity =>
+            {
+                entity.CurrentState = InventoryStates.Discontinued;
+                entity.PartNumber = "TEST_123";
+            });
+        }
+
+        [Test]
+        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+        {
+            LastException.ShouldBeNull();
+
+            Response.ShouldNotBeNull();
+            Response.Message.ShouldSatisfyAllConditions(o =>
+            {
+                o.PartNumber.ShouldBe("TEST_123");
+                o.Status.ShouldBe(InventoryStatus.Available);
+            });
+
+            SagaHarness.Sagas.Contains(ExistingId).ShouldSatisfyAllConditions(o =>
+            {
+                o.ShouldNotBeNull();
+                o.CorrelationId.ShouldBe(ExistingId);
+                o.CurrentState.ShouldBe(InventoryStates.Available);
+                o.PartNumber.ShouldBe("TEST_123");
+            });
+
+            (await Harness.Published.Any<InventoryCreated>()).ShouldBeTrue();
+        });
+    }
+
 }

@@ -42,7 +42,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
         During(Available,
 
             When(Created)
-                .Then(context => throw InventoryConflictException.DuplicatePartNumber(context.Message.PartNumber)),
+                .RespondAsync(Message<CreateInventoryResponse>),
 
             When(QuantityIncreased)
                 .Then(context => context.Saga.StockQuantity += context.Message.Amount)
@@ -104,7 +104,9 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
                 .RespondAsync(Message<DeleteInventoryResponse>)
                 .PublishAsync(Message<InventoryDiscontinued>),
 
-            // Reject quantity changes while on hold
+            When(Created)
+                .Then(context => throw InventoryStateException.CannotModifyHeldItem(context.Saga.CorrelationId, "Create")),
+            
             When(QuantityIncreased)
                 .Then(context => throw InventoryStateException.CannotModifyHeldItem(context.Saga.CorrelationId, "IncreaseQuantity")),
 
@@ -116,6 +118,12 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
         );
 
         During(Discontinued,
+
+            When(Created)
+                .Then(UpdateTimestamp)
+                .TransitionTo(Available)
+                .RespondAsync(Message<CreateInventoryResponse>)
+                .PublishAsync(Message<InventoryCreated>),
 
             When(Deleted)
                 .Then(UpdateTimestamp)
@@ -154,7 +162,9 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
                 .RespondAsync(Message<UpdateInventoryResponse>)
                 .PublishAsync(Message<InventoryQuantityIncreased>),
 
-            // Reject other operations
+            When(Created)
+                .Then(context => throw InventoryStateException.CannotModifyBackorderedItem(context.Saga.CorrelationId, "Create")),
+
             When(QuantityDecreased)
                 .Then(context => throw InventoryStateException.CannotModifyBackorderedItem(context.Saga.CorrelationId, "DecreaseQuantity")),
 
@@ -174,7 +184,11 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
         DuringAny(
             When(StatusRequested)
                 .Then(ctx => logger.LogInformation("Returning Inventory status message for {inventoryId}", ctx.Saga.CorrelationId))
-                .RespondAsync(Message<InventoryStatusResponse>)
+                .If(ctx => ctx.IsResponseAccepted<InventoryStatusResponse>(), 
+                    t => t
+                        .Then(ctx => logger.LogInformation("InventoryStatusResponse accepted!"))
+                        .RespondAsync(Message<InventoryStatusResponse>)
+                )
         );
 
         SetCompletedWhenFinalized();

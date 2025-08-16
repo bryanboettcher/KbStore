@@ -17,15 +17,14 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             Discontinued
         );
 
-        //Request(() => InventoryStatus, s => s.InventoryStatusId, c =>
-        //{
-        //    c.ClearRequestIdOnFaulted = true;
-        //    c.Completed = m => m.OnMissingInstance(b => b.Discard());
-        //    c.Faulted = m => m.OnMissingInstance(b => b.Discard());
-        //    c.TimeoutExpired = m => m.OnMissingInstance(b => b.Discard());
-        //});
-
-        Request(() => InventoryStatus);
+        Request(() => InventoryStatus, s => s.InventoryStatusId, c =>
+        {
+            c.Timeout = TimeSpan.FromSeconds(3);
+            c.ClearRequestIdOnFaulted = true;
+            c.Completed = m => m.OnMissingInstance(b => b.Discard());
+            c.Faulted = m => m.OnMissingInstance(b => b.Discard());
+            c.TimeoutExpired = m => m.OnMissingInstance(b => b.Discard());
+        });
 
         Event(() => Created, e => e.CorrelateBy((s, c) => s.Sku == c.Message.Sku).SelectId(_ => NewId.NextSequentialGuid()));
         Event(() => StatusRequested, e => e.CorrelateById(c => c.Message.ProductId).OnMissingInstance(b => b.Execute(c => throw new ProductNotFoundException(c.Message.ProductId))));
