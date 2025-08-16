@@ -1,12 +1,10 @@
-﻿using KbStore.Catalog.Abstractions.Contracts;
-using KbStore.Catalog.Services;
+﻿namespace KbStore.Catalog.Tests.Services.Inventory;
+
+using Abstractions.Contracts;
+using Abstractions.Exceptions;
+using Catalog.Services;
 using MassTransit;
 using NUnit.Framework;
-
-
-namespace KbStore.Catalog.Tests.Services.Inventory;
-
-using Abstractions.Exceptions;
 using Shouldly;
 
 
@@ -43,9 +41,9 @@ public abstract class InventoryCommandService_Create : CommandService_Tests<Mass
                 await context.RespondAsync<CreateInventoryResponse>(new
                 {
                     InventoryId = ExistingId,
-                    PartNumber = context.Message.PartNumber,
-                    Description = context.Message.Description,
-                    StockQuantity = context.Message.StockQuantity,
+                    context.Message.PartNumber,
+                    context.Message.Description,
+                    context.Message.StockQuantity,
                     Status = InventoryStatus.Available,
                     CreatedOn = Now,
                     UpdatedOn = Now
@@ -91,9 +89,9 @@ public abstract class InventoryCommandService_Create : CommandService_Tests<Mass
                 await context.RespondAsync<CreateInventoryResponse>(new
                 {
                     InventoryId = ExistingId,
-                    PartNumber = context.Message.PartNumber,
-                    Description = context.Message.Description,
-                    StockQuantity = context.Message.StockQuantity,
+                    context.Message.PartNumber,
+                    context.Message.Description,
+                    context.Message.StockQuantity,
                     Status = InventoryStatus.Available,
                     CreatedOn = Now,
                     UpdatedOn = Now
@@ -245,25 +243,38 @@ public abstract class InventoryCommandService_Create : CommandService_Tests<Mass
         {
             base.OnHarnessCreating(conf);
 
-            conf.AddHandler<CreateInventoryRequest>(context =>
+            conf.AddHandler<CreateInventoryRequest>(async context =>
             {
-                context.CancellationToken.ThrowIfCancellationRequested();
-
-                throw InventoryConflictException.DuplicatePartNumber("TEST_PART_123");
+                await context.RespondAsync<CreateInventoryResponse>(new
+                {
+                    InventoryId = ExistingId,
+                    context.Message.PartNumber,
+                    context.Message.Description,
+                    context.Message.StockQuantity,
+                    Status = InventoryStatus.Available,
+                    CreatedOn = Now,
+                    UpdatedOn = Later
+                });
             });
         }
 
         [Test]
         public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
         {
-            LastException.ShouldNotBeNull();
-            LastException.ShouldBeOfType<InventoryConflictException>();
-            LastException.Message.ShouldContain("part number");
-            LastException.Message.ShouldContain("TEST_PART_123");
+            LastException.ShouldBeNull();
 
-            Result.ShouldBeNull();
+            Result.ShouldNotBeNull();
+            Result.ShouldSatisfyAllConditions(x =>
+            {
+                x.InventoryId.ShouldBe(ExistingId);
+                x.PartNumber.ShouldBe("TEST_PART_123");
+                x.Status.ShouldBe(InventoryStatus.Available);
+                x.CreatedOn.ShouldBe(Now);
+                x.UpdatedOn.ShouldBe(Later);
+            });
 
             (await Harness.Consumed.Any<CreateInventoryRequest>()).ShouldBeTrue();
+            (await Harness.Published.Any<InventoryCreated>()).ShouldBeFalse();
         });
     }
 

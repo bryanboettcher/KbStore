@@ -26,30 +26,40 @@ public static class HostBuilderExtensions
 
     public static void AddMassTransit(this IHostApplicationBuilder builder)
     {
+        var connectionString = builder.Configuration.GetConnectionString("queue");
+        
         builder.Services.AddMassTransit(bus =>
         {
             bus.AddHangfireConsumers();
             bus.AddPublishMessageScheduler();
 
+            ConfigureFeatures(bus);
             ConfigureJobConsumers(bus);
             ConfigureSagas(bus);
 
-            bus.UsingRabbitMq(ConfigureQueue);
+            ConfigureTransport(bus, connectionString);
         });
+    }
 
-        return;
+    private static void ConfigureTransport(IBusRegistrationConfigurator bus, string? connectionString)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
-        void ConfigureQueue(IBusRegistrationContext ctx, IRabbitMqBusFactoryConfigurator cfg)
+        var uri = new Uri(connectionString);
+
+        bus.UsingRabbitMq((ctx, cfg) =>
         {
-            var connectionString = builder.Configuration.GetConnectionString("queue");
-            ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
-
-            var uri = new Uri(connectionString);
-
             cfg.Host(uri);
             cfg.UsePublishMessageScheduler();
             cfg.ConfigureEndpoints(ctx);
-        }
+        });
+    }
+
+    private static void ConfigureFeatures(IBusRegistrationConfigurator bus)
+    {
+        bus.AddConsumers(typeof(Program).Assembly);
+        bus.AddFutures(typeof(Program).Assembly);
+        bus.AddActivities(typeof(Program).Assembly);
     }
 
     private static void ConfigureSagas(IBusRegistrationConfigurator bus)
