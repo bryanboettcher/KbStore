@@ -14,46 +14,38 @@ public class Program
             .WithLifetime(ContainerLifetime.Persistent)
             .WithManagementPlugin();
 
-        EnlistInventory(builder, broker);
-        EnlistStorefront(builder, broker);
-
-        var webApi = builder.AddProject<KbStore_ApiService>("api")
-            .WithExternalHttpEndpoints()
-            .WithReference(broker).WithParentRelationship(broker);
-
-        var app = builder.Build();
-
-        await app.RunAsync()
-            .ConfigureAwait(false);
-    }
-    
-    private static void EnlistInventory(IDistributedApplicationBuilder builder, IResourceBuilder<RabbitMQServerResource> broker)
-    {
         var pgsql = builder.AddPostgres("pgsql")
             .WithDataVolume()
             .WithLifetime(ContainerLifetime.Persistent)
             .WithPgWeb(conf => conf.WithHostPort(5050));
 
-        var database = pgsql
+        var databaseCatalog = pgsql
             .AddDatabase("catalog");
 
         builder.AddProject<KbStore_Catalog>("domain-catalog")
-            .WithReference(broker).WithParentRelationship(broker)
-            .WithReference(database).WithParentRelationship(database);
-    }
+            .WithReference(broker)
+            .WithReference(databaseCatalog);
 
-    private static void EnlistStorefront(IDistributedApplicationBuilder builder, IResourceBuilder<RabbitMQServerResource> broker)
-    {
         var mongo = builder.AddMongoDB("mongo")
-                .WithDataVolume()
-                .WithLifetime(ContainerLifetime.Persistent)
-                .WithMongoExpress();
+            .WithDataVolume()
+            .WithLifetime(ContainerLifetime.Persistent)
+            .WithMongoExpress();
 
-        var database = mongo
+        var databaseStorefront = mongo
             .AddDatabase("storefront");
 
         builder.AddProject<KbStore_Storefront>("domain-storefront")
-            .WithReference(broker).WithParentRelationship(broker)
-            .WithReference(database).WithParentRelationship(database);
+            .WithReference(broker)
+            .WithReference(databaseStorefront);
+
+        var webApi = builder.AddProject<KbStore_ApiService>("api")
+            .WithReference(databaseCatalog)
+            .WithExternalHttpEndpoints()
+            .WithReference(broker);
+
+        var app = builder.Build();
+
+        await app.RunAsync()
+            .ConfigureAwait(false);
     }
 }

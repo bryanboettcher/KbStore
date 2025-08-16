@@ -183,12 +183,7 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
 
         DuringAny(
             When(StatusRequested)
-                .Then(ctx => logger.LogInformation("Returning Inventory status message for {inventoryId}", ctx.Saga.CorrelationId))
-                .If(ctx => ctx.IsResponseAccepted<InventoryStatusResponse>(), 
-                    t => t
-                        .Then(ctx => logger.LogInformation("InventoryStatusResponse accepted!"))
-                        .RespondAsync(Message<InventoryStatusResponse>)
-                )
+                .RespondAsync(Message<InventoryStatusResponse>)
         );
 
         SetCompletedWhenFinalized();

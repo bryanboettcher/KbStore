@@ -19,11 +19,8 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
 
         Request(() => InventoryStatus, s => s.InventoryStatusId, c =>
         {
-            c.Timeout = TimeSpan.FromSeconds(3);
+            c.Timeout = TimeSpan.FromSeconds(0);
             c.ClearRequestIdOnFaulted = true;
-            c.Completed = m => m.OnMissingInstance(b => b.Discard());
-            c.Faulted = m => m.OnMissingInstance(b => b.Discard());
-            c.TimeoutExpired = m => m.OnMissingInstance(b => b.Discard());
         });
 
         Event(() => Created, e => e.CorrelateBy((s, c) => s.Sku == c.Message.Sku).SelectId(_ => NewId.NextSequentialGuid()));

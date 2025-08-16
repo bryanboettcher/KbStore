@@ -50,6 +50,8 @@ public static class HostBuilderExtensions
         bus.UsingRabbitMq((ctx, cfg) =>
         {
             cfg.Host(uri);
+
+            cfg.UseInMemoryOutbox(ctx, _ => { });
             cfg.UsePublishMessageScheduler();
             cfg.ConfigureEndpoints(ctx);
         });

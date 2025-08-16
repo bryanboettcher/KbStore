@@ -98,8 +98,10 @@ public interface InventoryDeleted : BaseInventoryEvent;
 public interface InventoryStatusRequest
 {
     Guid InventoryId { get; }
-};
+}
+
 public interface InventoryStatusResponse : InventoryModel;
+
 #endregion
 
 public static class InventoryStates
