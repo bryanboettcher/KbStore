@@ -6,7 +6,12 @@
       "Bash(claude-code system-analyst:*)",
       "Bash(dir:*)",
       "Bash(findstr:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git checkout:*)",
+      "WebSearch",
+      "Read(//c/users/bryan/source/repos/masstransit/**)",
+      "Bash(dotnet nuget list:*)",
+      "Bash(dotnet package search:*)"
     ],
     "deny": [],
     "ask": []
