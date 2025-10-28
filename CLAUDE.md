@@ -377,5 +377,27 @@ State machines publish events that other domains consume:
 
 - **Main Branch**: `main`
 - **Development Branch**: `develop`
-- Create feature branches from `develop`
+- **Feature Branches**: Create from `develop` for substantial changes
 - Use meaningful commit messages describing the change
+
+### When to Create a Feature Branch
+
+**Always create a feature branch for:**
+- New domain implementations (entire vertical stacks)
+- Multi-file refactorings affecting multiple projects
+- Breaking changes or architectural modifications
+- Any work that requires multiple commits to complete
+- Features that may need review before merging
+
+**Single commit directly to develop is acceptable for:**
+- Bug fixes isolated to 1-2 files
+- Documentation updates
+- Minor refactorings within a single file
+- Configuration changes
+
+**Naming Convention:**
+- Feature: `feature/short-description`
+- Bug fix: `fix/short-description`
+- Documentation: `docs/short-description`
+
+**Example:** `feature/storefront-services-implementation`

@@ -1,6 +1,7 @@
 ﻿namespace KbStore.Storefront.Extensions;
 
 using MassTransit;
+using MongoDB.Driver;
 
 
 public static class HostBuilderExtensions
@@ -9,6 +10,8 @@ public static class HostBuilderExtensions
     {
         builder.Services.AddMassTransit(bus =>
         {
+            ConfigureSagas(bus);
+
             bus.UsingRabbitMq(ConfigureQueue);
         });
 
@@ -25,5 +28,17 @@ public static class HostBuilderExtensions
 
             cfg.ConfigureEndpoints(ctx);
         }
+    }
+
+    private static void ConfigureSagas(IBusRegistrationConfigurator bus)
+    {
+        // Saga registrations will be added in Phase 1
+        // Example pattern:
+        // bus.AddSagaStateMachine<SellableItemStateMachine, SellableItemEntity>()
+        //     .MongoDbRepository(r =>
+        //     {
+        //         r.DatabaseFactory(provider => provider.GetRequiredService<IMongoDatabase>());
+        //         r.CollectionName = CollectionNames.SellableItems;
+        //     });
     }
 }
