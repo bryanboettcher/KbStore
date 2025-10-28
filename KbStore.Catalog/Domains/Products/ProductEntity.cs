@@ -20,7 +20,6 @@ public class ProductEntity : SagaStateMachineInstance
     public string? Description { get; set; }
 
     public int Quantity { get; set; }
-    public decimal Price { get; set; }
     public decimal? Weight { get; set; }
     public decimal? Height { get; set; }
     public decimal? Width { get; set; }
@@ -67,9 +66,6 @@ public class ProductSagaMap : SagaClassMap<ProductEntity>
 
         entity.Property(x => x.Description)
             .HasMaxLength(2000);
-
-        entity.Property(x => x.Price)
-            .HasPrecision(18, 2);
 
         entity.Property(x => x.Quantity)
             .HasDefaultValue(0);
