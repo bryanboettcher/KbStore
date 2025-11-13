@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\KbStore.Storefront.Abstractions\KbStore.Storefront.Abstractions.csproj" />
     <ProjectReference Include="..\KbStore.Storefront\KbStore.Storefront.csproj" />
+    <ProjectReference Include="..\KbStore.Tests\KbStore.Tests.csproj" />
   </ItemGroup>
 
 </Project>

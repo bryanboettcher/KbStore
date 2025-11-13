@@ -5,7 +5,7 @@ namespace KbStore.Storefront.Abstractions.Constants;
 /// These names must match exactly between saga configuration and query service collection access.
 /// Internal to Storefront domain and services layer only.
 /// </summary>
-internal static class CollectionNames
+public static class CollectionNames
 {
     public const string SellableItems = "sellable-items";
     public const string Carts = "carts";

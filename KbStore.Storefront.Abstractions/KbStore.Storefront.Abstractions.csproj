@@ -10,4 +10,8 @@
     <ProjectReference Include="..\KbStore.Abstractions\KbStore.Abstractions.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Driver" />
+  </ItemGroup>
+
 </Project>

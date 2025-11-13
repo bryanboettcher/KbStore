@@ -6,6 +6,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 KbStore is a .NET 9 distributed application built with .NET Aspire orchestration. It implements an event-driven architecture using MassTransit Saga State Machines to manage domain entities through state transitions. The application is organized around Domain-Driven Design (DDD) principles with separate bounded contexts.
 
+## Implementation Status
+
+### Current Phase: Phase 0 Complete (MongoDB Foundation)
+**Completed**: Catalog domain fully implemented with Product and Inventory state machines, services, and API endpoints.
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| **Catalog Domain** | FULLY IMPLEMENTED | Product and Inventory state machines, command/query services, PostgreSQL persistence, comprehensive tests |
+| **Storefront Domain** | INFRASTRUCTURE ONLY | MongoDB connection configured, MassTransit registration, but NO domain logic, state machines, or services yet |
+| **ApiService HTTP Gateway** | PARTIAL | Catalog endpoints fully functional, Storefront endpoints not created yet |
+| **ApiService Orchestration** | PLACEHOLDER | Empty consumer classes exist but no cross-domain orchestration logic implemented |
+| **Authentication/Authorization** | NOT IMPLEMENTED | Wide open, planned for future |
+| **Aspire Orchestration** | FULLY IMPLEMENTED | RabbitMQ, PostgreSQL, MongoDB all configured and functional |
+
+### What Works Now:
+- Create, update, query, and delete Products via HTTP API
+- Create, modify, and track Inventory via HTTP API
+- Product and Inventory state machines with full lifecycle management
+- Event publishing from Catalog domain (but no consumers processing them yet)
+- Automated database migrations for Catalog domain
+- Comprehensive test coverage for Catalog domain
+
+### What Doesn't Work Yet:
+- Storefront domain functionality (no state machines, services, or entities)
+- Cross-domain event orchestration (events are published but not consumed)
+- Customer-facing product listings, pricing, or cart operations
+- Authentication or authorization on API endpoints
+
+For detailed navigation and patterns, see `docs/NAVIGATION.md` and `docs/PATTERNS.md`.
+
 ## Architecture
 
 ### Core Design Principles
@@ -61,26 +91,36 @@ The solution is organized into domain-specific vertical slices under the `Domain
 
 **Key Point**: Catalog does NOT own customer-facing pricing. `Product.Price` is for internal cost tracking.
 
-#### Storefront Domain (Customer-Facing Transactions)
+#### Storefront Domain (Customer-Facing Transactions) - **PLACEHOLDER**
 **Responsibility**: Manages "what customers can buy" and "at what price"
 
-- **KbStore.Storefront**: Pure domain - state machines for SellableItem, Cart, Order entities (MongoDB) - **Placeholder**
-- **KbStore.Storefront.Abstractions**: Contracts and interfaces - **Placeholder**
-- **KbStore.Storefront.Tests**: Domain tests
+**Implementation Status**: Infrastructure only - MongoDB connection configured, MassTransit registration in place, but no state machines, services, or endpoints implemented yet.
 
-**Key Point**: Storefront owns customer-facing pricing, promotions, and denormalized product read models.
+- **KbStore.Storefront**: Infrastructure configured (MongoDB + MassTransit) - **NO DOMAIN LOGIC YET**
+- **KbStore.Storefront.Abstractions**: Project exists but contains no contracts yet - **EMPTY**
+- **KbStore.Storefront.Tests**: Test project exists but no tests yet - **EMPTY**
 
-#### ApiService (Orchestration Layer)
+**Key Point**: When implemented, Storefront will own customer-facing pricing, promotions, and denormalized product read models. Currently awaiting Phase 1 implementation.
+
+#### ApiService (Orchestration Layer) - **PARTIALLY IMPLEMENTED**
 **Responsibility**: HTTP gateway + cross-domain orchestration
 
-- **KbStore.ApiService**:
-  - **HTTP Endpoints**: Thin delegates to domain services
-  - **Event Consumers**: Orchestration logic that coordinates workflows across domains
-  - **Authentication/Authorization**: API-specific concerns, delegates user identity as Guid
-  - **Business Logic Spanning Domains**: Rules requiring coordination between Catalog and Storefront
-- **KbStore.ApiService.Tests**: API integration tests
+**Implementation Status**:
+- HTTP Endpoints for Catalog domain: **FULLY IMPLEMENTED**
+- Cross-domain event consumers: **PLACEHOLDER ONLY** (empty consumer classes exist but no orchestration logic)
 
-**Key Point**: ApiService contains event consumers that call domain service layers to coordinate cross-domain workflows. Domains do not directly communicate.
+- **KbStore.ApiService**:
+  - **HTTP Endpoints**:
+    - `Endpoints/Catalog/ProductEndpoints.cs` - **IMPLEMENTED** (CRUD operations for products)
+    - `Endpoints/Catalog/InventoryEndpoints.cs` - **IMPLEMENTED** (inventory operations)
+  - **Event Consumers**:
+    - `Consumers/Catalog/ProductAvailabilityConsumer.cs` - **PLACEHOLDER** (empty class, no orchestration logic)
+    - Future Storefront consumers - **NOT CREATED YET**
+  - **Authentication/Authorization**: **NOT IMPLEMENTED** - currently wide open, planned for future
+  - **Business Logic Spanning Domains**: **PLANNED** but not yet implemented (waiting for Storefront domain)
+- **KbStore.ApiService.Tests**: Test project exists but minimal tests
+
+**Key Point**: ApiService currently serves as HTTP gateway for Catalog domain. Cross-domain orchestration is architecturally planned but not yet implemented because Storefront domain doesn't exist yet.
 
 ### State Machine Pattern
 
@@ -139,11 +179,17 @@ Services are located in `KbStore.Catalog.Services` and send messages to state ma
 - State machines respond with current state
 - Events are published for inter-domain communication
 
-### Cross-Domain Orchestration Pattern
+### Cross-Domain Orchestration Pattern - **PLANNED BUT NOT IMPLEMENTED**
 
-**ApiService acts as the orchestration layer** that coordinates workflows across bounded contexts.
+**ApiService is designed to act as the orchestration layer** that coordinates workflows across bounded contexts. This is the architectural intent but is NOT yet functional.
 
-**How it works**:
+**Current State**:
+- Catalog domain publishes events (e.g., `ProductAvailabilityChanged`, `InventoryQuantityChanged`) **IMPLEMENTED**
+- ApiService has placeholder consumer classes **BUT THEY ARE EMPTY**
+- Storefront domain **DOES NOT EXIST YET** - no services to orchestrate to
+- No cross-domain workflows are currently active
+
+**Planned Implementation** (not yet built):
 
 1. **Catalog domain** publishes event: `InventoryQuantityChanged`
 2. **ApiService consumer** receives event via RabbitMQ
@@ -151,6 +197,7 @@ Services are located in `KbStore.Catalog.Services` and send messages to state ma
 4. **Storefront domain** updates `SellableItem` read model via state machine
 
 ```csharp
+// FUTURE EXAMPLE (not yet implemented):
 // In KbStore.ApiService/Consumers/
 public class InventoryQuantityChangedConsumer : IConsumer<InventoryQuantityChanged>
 {
@@ -168,16 +215,16 @@ public class InventoryQuantityChangedConsumer : IConsumer<InventoryQuantityChang
 }
 ```
 
-**Correlation Strategy**: All domains use the same `Guid` (CorrelationId) to identify entities across boundaries.
+**Planned Correlation Strategy**: All domains will use the same `Guid` (CorrelationId) to identify entities across boundaries.
 - Catalog: `Product(Id=Guid-123, SKU="WIDGET")`
-- Storefront: `SellableItem(Id=Guid-123, SKU="WIDGET", Price=$9.99)`
+- Storefront (future): `SellableItem(Id=Guid-123, SKU="WIDGET", Price=$9.99)`
 
-**Important Boundaries**:
+**Important Boundaries** (architectural principles):
 - Domains **never directly consume** events from other domains
 - All cross-domain coordination flows through ApiService consumers
 - ApiService consumers **never directly access databases** - always call service layers
 
-For detailed event choreography patterns, see `KbStore.ApiService/INTEGRATION.md`.
+For detailed architectural plans, see `KbStore.ApiService/INTEGRATION.md` and `KbStore.Storefront/ARCHITECTURE.md`.
 
 ## Development Workflow with Claude Code
 
@@ -353,10 +400,13 @@ return response.Message;
 
 ### Inter-Domain Communication
 
-State machines publish events that other domains consume:
-- Product publishes `ProductCreated`, `ProductAvailabilityChanged`, etc.
-- Inventory publishes `InventoryQuantityChanged`, `InventoryDiscontinued`, etc.
-- Domains subscribe to relevant events via MassTransit consumers
+**Current State**: Events are published but NOT yet consumed by other domains.
+
+State machines publish events:
+- Product publishes `ProductCreated`, `ProductAvailabilityChanged`, etc. - **IMPLEMENTED**
+- Inventory publishes `InventoryQuantityChanged`, `InventoryDiscontinued`, etc. - **IMPLEMENTED**
+
+**Future**: Domains will subscribe to relevant events via MassTransit consumers in ApiService orchestration layer (not yet implemented).
 
 ### Adding New Commands to Existing State Machines
 

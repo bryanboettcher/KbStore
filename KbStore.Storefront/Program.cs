@@ -16,6 +16,9 @@ public class Program
         builder.AddMassTransit();
 
         var app = builder.Build();
+
+        await app.EnsureMongoDbIndexesAsync();
+
         await app.RunAsync();
     }
 }
