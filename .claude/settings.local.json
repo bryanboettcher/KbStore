@@ -11,7 +11,8 @@
       "WebSearch",
       "Read(//c/users/bryan/source/repos/masstransit/**)",
       "Bash(dotnet nuget list:*)",
-      "Bash(dotnet package search:*)"
+      "Bash(dotnet package search:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

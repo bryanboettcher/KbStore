@@ -110,6 +110,7 @@ public class SellableItemQueryService : ISellableItemQueryService
     {
         return new SellableItemResponse(
             Id: entity.CorrelationId,
+            ProductId: entity.ProductId,
             SKU: entity.SKU,
             Name: entity.Name,
             Description: entity.Description,

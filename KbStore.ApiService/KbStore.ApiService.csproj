@@ -14,6 +14,7 @@
     <ProjectReference Include="..\KbStore.Catalog.Services\KbStore.Catalog.Services.csproj" />
     <ProjectReference Include="..\KbStore.ServiceDefaults\KbStore.ServiceDefaults.csproj" />
     <ProjectReference Include="..\KbStore.Storefront.Abstractions\KbStore.Storefront.Abstractions.csproj" />
+    <ProjectReference Include="..\KbStore.Storefront.Services\KbStore.Storefront.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

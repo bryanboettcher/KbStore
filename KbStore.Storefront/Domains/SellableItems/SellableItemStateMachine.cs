@@ -257,6 +257,7 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
 
     private static void SetProperties(BehaviorContext<SellableItemEntity, CreateSellableItemRequest> context)
     {
+        context.Saga.ProductId = context.Message.ProductId;
         context.Saga.SKU = context.Message.SKU;
         context.Saga.Name = context.Message.Name;
         context.Saga.Description = context.Message.Description;
@@ -277,6 +278,7 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
         => context.Init<SellableItemResponse>(new
         {
             Id = context.Saga.CorrelationId,
+            context.Saga.ProductId,
             context.Saga.SKU,
             context.Saga.Name,
             context.Saga.Description,

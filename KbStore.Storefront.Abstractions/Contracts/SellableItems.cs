@@ -4,6 +4,7 @@ namespace KbStore.Storefront.Abstractions.Contracts;
 
 public record CreateSellableItemRequest
 {
+    public Guid? ProductId { get; init; }
     public string SKU { get; init; } = "";
     public string Name { get; init; } = "";
     public string? Description { get; init; }
@@ -55,6 +56,7 @@ public record ReinstateSellableItemRequest
 
 public record SellableItemResponse(
     Guid Id,
+    Guid? ProductId,
     string SKU,
     string Name,
     string? Description,

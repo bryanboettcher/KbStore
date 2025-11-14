@@ -21,6 +21,7 @@ public interface ISellableItemCommandService
         decimal basePrice,
         string itemType,
         Dictionary<string, object?> payload,
+        Guid? productId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

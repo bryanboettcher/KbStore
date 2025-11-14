@@ -8,6 +8,7 @@ public class SellableItemEntity : SagaStateMachineInstance, ISagaVersion
     public int Version { get; set; }
     public int CurrentState { get; set; }
 
+    public Guid? ProductId { get; set; }
     public string SKU { get; set; } = "";
     public string Name { get; set; } = "";
     public string? Description { get; set; }

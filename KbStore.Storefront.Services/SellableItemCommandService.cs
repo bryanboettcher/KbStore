@@ -50,12 +50,14 @@ public class SellableItemCommandService : ISellableItemCommandService
         decimal basePrice,
         string itemType,
         Dictionary<string, object?> payload,
+        Guid? productId = null,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Creating sellable item with SKU {SKU}", sku);
 
         var request = new CreateSellableItemRequest
         {
+            ProductId = productId,
             SKU = sku,
             Name = name,
             Description = description,
