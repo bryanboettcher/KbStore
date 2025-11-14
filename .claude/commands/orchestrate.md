@@ -72,17 +72,18 @@ Agent handles add, commit, and workflow decisions
 
 ### Documentation
 **Agent:** `changelog-manager`
-**When:** After git-workflow-manager creates commits
+**When:** Before git-workflow-manager creates commits
 **Capabilities:**
-- Analyzes recent commits
+- Analyzes staged/unstaged changes
 - Generates CHANGELOG.md entries
 - Creates ADR-style detailed documentation
 - Single-line index entries + detailed files
 
 **Usage:**
 ```
-Invoke automatically after commits
-Agent reads commit history and generates docs
+Invoke BEFORE git-workflow-manager
+Agent analyzes changes and generates documentation
+Documentation files are committed together with feature changes
 ```
 
 ### Code Quality
@@ -184,8 +185,8 @@ Use for troubleshooting complex issues
 2. dotnet-backend-engineer: Implement (domain + services + tests)
 3. code-review: Review implementation
 4. dotnet-backend-engineer: Fix issues (if any)
-5. git-workflow-manager: Create commit
-6. changelog-manager: Generate documentation
+5. changelog-manager: Generate documentation
+6. git-workflow-manager: Create commit (includes changelog files)
 ```
 
 ### Pattern 2: Bug Fix
@@ -194,8 +195,8 @@ Use for troubleshooting complex issues
 1. Explore (if needed): Understand the issue
 2. dotnet-backend-engineer: Fix the bug + add tests
 3. code-review: Verify fix doesn't introduce issues
-4. git-workflow-manager: Create commit
-5. changelog-manager: Document fix
+4. changelog-manager: Document fix
+5. git-workflow-manager: Create commit (includes changelog files)
 ```
 
 ### Pattern 3: Architectural Decision
@@ -206,7 +207,8 @@ Use for troubleshooting complex issues
 3. AskUserQuestion: Confirm direction
 4. dotnet-backend-engineer: Implement
 5. code-review: Verify consistency
-6. git-workflow-manager + changelog-manager: Document
+6. changelog-manager: Generate documentation
+7. git-workflow-manager: Create commit (includes changelog files)
 ```
 
 ### Pattern 4: Large Multi-Phase Work
@@ -218,8 +220,8 @@ Use for troubleshooting complex issues
    a. dotnet-backend-engineer: Implement
    b. code-review: Review
    c. Fix issues
-   d. git-workflow-manager: Commit
-   e. changelog-manager: Document
+   d. changelog-manager: Document
+   e. git-workflow-manager: Commit (includes changelog files)
 4. Final code-review: Verify integration
 ```
 
