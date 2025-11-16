@@ -3,6 +3,7 @@
 
 namespace KbStore.Storefront.Domains.SellableItems;
 
+using KbStore.Abstractions;
 using KbStore.Storefront.Abstractions.Contracts;
 using KbStore.Storefront.Abstractions.Exceptions;
 using MassTransit;
@@ -16,21 +17,16 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
         Event(() => Created, e =>
         {
             e.CorrelateBy((saga, context) => saga.SKU == context.Message.SKU);
-            e.SelectId(_ => NewId.NextSequentialGuid());
+            e.SelectId(context => DeterministicGuid.FromSellableItemSku(context.Message.SKU));
             e.InsertOnInitial = true;
-            e.SetSagaFactory(context => new SellableItemEntity
-            {
-                CorrelationId = NewId.NextSequentialGuid(),
-                SKU = context.Message.SKU
-            });
         });
-        Event(() => NameUpdated, ConfigureEvent);
-        Event(() => PriceUpdated, ConfigureEvent);
-        Event(() => PublishRequested, ConfigureEvent);
-        Event(() => HideRequested, ConfigureEvent);
-        Event(() => DiscontinueRequested, ConfigureEvent);
-        Event(() => ReinstateRequested, ConfigureEvent);
-        Event(() => DeleteRequested, ConfigureEvent);
+        Event(() => NameUpdated);
+        Event(() => PriceUpdated);
+        Event(() => PublishRequested);
+        Event(() => HideRequested);
+        Event(() => DiscontinueRequested);
+        Event(() => ReinstateRequested);
+        Event(() => DeleteRequested);
 
         Initially(
             When(Created)
@@ -49,7 +45,7 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
                 .TransitionTo(Published)
                 .Then(UpdateTimestamp)
                 .RespondAsync(CreateResponse)
-                .PublishAsync(context => context.Init<SellableItemPublished>(new
+                .PublishAsync(context => Task.FromResult(new SellableItemPublished
                 {
                     SellableItemId = context.Saga.CorrelationId,
                     PublishedAt = DateTime.UtcNow
@@ -57,7 +53,7 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
 
             When(DeleteRequested)
                 .Then(UpdateTimestamp)
-                .PublishAsync(context => context.Init<SellableItemDeleted>(new
+                .PublishAsync(context => Task.FromResult(new SellableItemDeleted
                 {
                     SellableItemId = context.Saga.CorrelationId,
                     DeletedAt = DateTime.UtcNow
@@ -96,7 +92,7 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
                 .TransitionTo(Hidden)
                 .Then(UpdateTimestamp)
                 .RespondAsync(CreateResponse)
-                .PublishAsync(context => context.Init<SellableItemHidden>(new
+                .PublishAsync(context => Task.FromResult(new SellableItemHidden
                 {
                     SellableItemId = context.Saga.CorrelationId,
                     HiddenAt = DateTime.UtcNow
@@ -106,7 +102,7 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
                 .RespondAsync(CreateResponse)
-                .PublishAsync(context => context.Init<SellableItemDiscontinued>(new
+                .PublishAsync(context => Task.FromResult(new SellableItemDiscontinued
                 {
                     SellableItemId = context.Saga.CorrelationId,
                     DiscontinuedAt = DateTime.UtcNow
@@ -144,7 +140,7 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
                 .TransitionTo(Published)
                 .Then(UpdateTimestamp)
                 .RespondAsync(CreateResponse)
-                .PublishAsync(context => context.Init<SellableItemPublished>(new
+                .PublishAsync(context => Task.FromResult(new SellableItemPublished
                 {
                     SellableItemId = context.Saga.CorrelationId,
                     PublishedAt = DateTime.UtcNow
@@ -154,7 +150,7 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
                 .RespondAsync(CreateResponse)
-                .PublishAsync(context => context.Init<SellableItemDiscontinued>(new
+                .PublishAsync(context => Task.FromResult(new SellableItemDiscontinued
                 {
                     SellableItemId = context.Saga.CorrelationId,
                     DiscontinuedAt = DateTime.UtcNow
@@ -274,60 +270,34 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
         context.Saga.UpdatedAt = DateTime.UtcNow;
     }
 
-    private static Task<SendTuple<SellableItemResponse>> CreateResponse(BehaviorContext<SellableItemEntity> context)
-        => context.Init<SellableItemResponse>(new
-        {
-            Id = context.Saga.CorrelationId,
-            context.Saga.ProductId,
-            context.Saga.SKU,
-            context.Saga.Name,
-            context.Saga.Description,
-            context.Saga.BasePrice,
-            context.Saga.ItemType,
-            context.Saga.Payload,
-            State = GetStateName(context.Saga.CurrentState),
-            context.Saga.IsAvailable,
-            context.Saga.Version,
-            context.Saga.CreatedAt,
-            context.Saga.UpdatedAt
-        });
-
-    private static Task<SendTuple<SellableItemCreated>> CreateEvent(BehaviorContext<SellableItemEntity> context)
-        => context.Init<SellableItemCreated>(new
+    private static Task<SellableItemCreated> CreateEvent(BehaviorContext<SellableItemEntity> context)
+        => Task.FromResult(new SellableItemCreated
         {
             SellableItemId = context.Saga.CorrelationId,
-            context.Saga.SKU,
-            context.Saga.Name,
-            context.Saga.BasePrice,
-            context.Saga.ItemType,
-            context.Saga.CreatedAt
+            SKU = context.Saga.SKU,
+            Name = context.Saga.Name,
+            BasePrice = context.Saga.BasePrice,
+            ItemType = context.Saga.ItemType,
+            CreatedAt = context.Saga.CreatedAt
         });
 
-    private static void ConfigureEvent<TMessage>(IEventCorrelationConfigurator<SellableItemEntity, TMessage> conf)
-        where TMessage : class
-    {
-        conf.CorrelateById(GetCorrelationId);
-        conf.OnMissingInstance(b => b.ExecuteAsync(c =>
+    private static Task<SellableItemResponse> CreateResponse(BehaviorContext<SellableItemEntity> context)
+        => Task.FromResult(new SellableItemResponse
         {
-            var id = GetCorrelationId(c);
-            throw new SellableItemNotFoundException(id);
-        }));
-    }
-
-    private static Guid GetCorrelationId<TMessage>(ConsumeContext<TMessage> context) where TMessage : class
-    {
-        return context.Message switch
-        {
-            UpdateSellableItemNameRequest msg => msg.SellableItemId,
-            UpdateSellableItemPriceRequest msg => msg.SellableItemId,
-            PublishSellableItemRequest msg => msg.SellableItemId,
-            HideSellableItemRequest msg => msg.SellableItemId,
-            DiscontinueSellableItemRequest msg => msg.SellableItemId,
-            ReinstateSellableItemRequest msg => msg.SellableItemId,
-            DeleteSellableItemRequest msg => msg.SellableItemId,
-            _ => throw new InvalidOperationException($"Cannot extract SellableItemId from message type {typeof(TMessage).Name}")
-        };
-    }
+            Id = context.Saga.CorrelationId,
+            ProductId = context.Saga.ProductId,
+            SKU = context.Saga.SKU,
+            Name = context.Saga.Name,
+            Description = context.Saga.Description,
+            BasePrice = context.Saga.BasePrice,
+            ItemType = context.Saga.ItemType,
+            Payload = context.Saga.Payload,
+            State = GetStateName(context.Saga.CurrentState),
+            IsAvailable = context.Saga.IsAvailable,
+            Version = context.Saga.Version,
+            CreatedAt = context.Saga.CreatedAt,
+            UpdatedAt = context.Saga.UpdatedAt
+        });
 
     private static string GetStateName(int state) => state switch
     {
