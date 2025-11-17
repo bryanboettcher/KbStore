@@ -18,4 +18,6 @@ public class TestProductModel : ProductModel
     public bool IsAvailable { get; set; }
     public DateTimeOffset CreatedOn { get; set; }
     public DateTimeOffset UpdatedOn { get; set; }
+
+    public Guid CorrelationId => ProductId;
 }

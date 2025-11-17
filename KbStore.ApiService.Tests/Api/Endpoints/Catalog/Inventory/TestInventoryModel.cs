@@ -12,4 +12,6 @@ public class TestInventoryModel : InventoryModel
     public InventoryStatus Status { get; set; }
     public DateTimeOffset CreatedOn { get; set; }
     public DateTimeOffset UpdatedOn { get; set; }
+
+    public Guid CorrelationId => InventoryId;
 }
