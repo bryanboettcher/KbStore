@@ -107,3 +107,12 @@ public class SellableItemConflictException : SellableItemException
             Data = { { "sku", sku } }
         };
 }
+
+/// <summary>
+/// Thrown when a sellable item operation fails for an unknown or unhandled reason.
+/// </summary>
+public class GenericSellableItemException : SellableItemException
+{
+    public GenericSellableItemException(string message) : base(message) { }
+    public GenericSellableItemException(string message, Exception innerException) : base(message, innerException) { }
+}

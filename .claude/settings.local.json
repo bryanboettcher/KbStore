@@ -38,7 +38,8 @@
       "Bash(KbStore.Storefront.Tests/Domains/SellableItems/SellableItem_Publish.cs )",
       "Bash(KbStore.Storefront.Tests/Domains/SellableItems/SellableItem_Reinstate.cs )",
       "Bash(KbStore.Storefront.Tests/Domains/SellableItems/SellableItem_UpdateName.cs )",
-      "Bash(KbStore.Storefront.Tests/Domains/SellableItems/SellableItem_UpdatePrice.cs)"
+      "Bash(KbStore.Storefront.Tests/Domains/SellableItems/SellableItem_UpdatePrice.cs)",
+      "SlashCommand(/orchestrate)"
     ],
     "deny": [],
     "ask": []

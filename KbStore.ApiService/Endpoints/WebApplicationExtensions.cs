@@ -1,6 +1,7 @@
 ﻿namespace KbStore.ApiService.Endpoints;
 
 using Catalog;
+using Storefront;
 
 public static class WebApplicationExtensions
 {
@@ -8,5 +9,6 @@ public static class WebApplicationExtensions
     {
         InventoryEndpoints.MapTo(app);
         ProductEndpoints.MapTo(app);
+        SellableItemEndpoints.MapTo(app);
     }
 }

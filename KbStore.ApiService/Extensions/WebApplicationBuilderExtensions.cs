@@ -13,7 +13,7 @@ public static class WebApplicationBuilderExtensions
         var services = builder.Services;
 
         services.AddCatalogServices(config);
-        services.AddStorefrontServices();
+        services.AddStorefrontServices(config);
 
         services.AddMassTransit(bus =>
         {
