@@ -1,29 +1,71 @@
-using System.Security.Cryptography;
+using System.Buffers.Binary;
+using System.IO.Hashing;
 using System.Text;
 
 namespace KbStore.Abstractions;
 
 /// <summary>
-/// Provides deterministic GUID generation using RFC 4122 UUID v5 (SHA-1 based).
+/// Provides deterministic, zero-allocation GUID generation using XxHash64.
 /// Enables cross-domain correlation where entities with matching business keys
 /// share the same CorrelationId.
 /// </summary>
+/// <remarks>
+/// <para>
+/// GUIDs are structured as: [MacroNamespace(4)][Domain(2)][Version(2)][Hash(8)]
+/// </para>
+/// <para>
+/// <b>MacroNamespace:</b> Installation-specific identifier (default: "KbSt" = 0x4B625374).
+/// Allows test isolation by changing the namespace without affecting production data.
+/// </para>
+/// <para>
+/// <b>Domain:</b> Identifies the bounded context (1=Product, 2=Inventory, 3=SellableItem).
+/// </para>
+/// <para>
+/// <b>Version:</b> Schema version for future-proofing (currently 0).
+/// </para>
+/// <para>
+/// <b>Hash:</b> XxHash64 of UTF-8 encoded input (SKU, part number, etc.).
+/// </para>
+/// <para>
+/// <b>Zero-allocation design:</b> Uses stackalloc and Span&lt;byte&gt; for all operations.
+/// No heap allocations occur during GUID generation.
+/// </para>
+/// </remarks>
 public static class DeterministicGuid
 {
-    // Namespace GUIDs for different domains (arbitrary but fixed)
-    private static readonly Guid ProductNamespace = new("A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D");
-    private static readonly Guid InventoryNamespace = new("B2C3D4E5-F6A7-4B6C-9D0E-1F2A3B4C5D6E");
-    private static readonly Guid SellableItemNamespace = new("C3D4E5F6-A7B8-4C7D-0E1F-2A3B4C5D6E7F");
+    /// <summary>
+    /// MacroNamespace identifier for this installation (default: "KbSt" = 0x4B625374).
+    /// Can be modified for test isolation via <see cref="SetMacroNamespace"/>.
+    /// </summary>
+    private static int _macroNamespace = 0x4B625374; // "KbSt" in ASCII
+
+    /// <summary>
+    /// Sets the MacroNamespace to a custom value for test isolation.
+    /// </summary>
+    /// <param name="value">The new MacroNamespace value</param>
+    /// <remarks>
+    /// This is primarily used in tests to generate different GUIDs for the same
+    /// business keys without polluting production data.
+    /// </remarks>
+    public static void SetMacroNamespace(int value) => _macroNamespace = value;
+
+    /// <summary>
+    /// Resets the MacroNamespace to the production default ("KbSt" = 0x4B625374).
+    /// </summary>
+    public static void ResetToProduction() => _macroNamespace = 0x4B625374;
 
     /// <summary>
     /// Generates a deterministic GUID for a Product based on its SKU.
     /// </summary>
     /// <param name="sku">The product SKU (case-sensitive)</param>
     /// <returns>A deterministic GUID that will always be the same for the same SKU</returns>
+    /// <remarks>
+    /// Uses domain=1, version=0. Zero allocations.
+    /// </remarks>
     public static Guid FromProductSku(string sku)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sku, nameof(sku));
-        return CreateVersion5(ProductNamespace, sku);
+        return From(domain: 1, version: 0, sku.AsSpan());
     }
 
     /// <summary>
@@ -31,10 +73,13 @@ public static class DeterministicGuid
     /// </summary>
     /// <param name="partNumber">The inventory part number (case-sensitive)</param>
     /// <returns>A deterministic GUID that will always be the same for the same part number</returns>
+    /// <remarks>
+    /// Uses domain=2, version=0. Zero allocations.
+    /// </remarks>
     public static Guid FromInventoryPartNumber(string partNumber)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(partNumber, nameof(partNumber));
-        return CreateVersion5(InventoryNamespace, partNumber);
+        return From(domain: 2, version: 0, partNumber.AsSpan());
     }
 
     /// <summary>
@@ -42,62 +87,42 @@ public static class DeterministicGuid
     /// </summary>
     /// <param name="sku">The sellable item SKU (case-sensitive)</param>
     /// <returns>A deterministic GUID that will always be the same for the same SKU</returns>
+    /// <remarks>
+    /// Uses domain=3, version=0. Zero allocations.
+    /// </remarks>
     public static Guid FromSellableItemSku(string sku)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sku, nameof(sku));
-        return CreateVersion5(SellableItemNamespace, sku);
+        return From(domain: 3, version: 0, sku.AsSpan());
     }
 
     /// <summary>
-    /// Creates a UUID v5 (SHA-1 based) from a namespace GUID and name.
-    /// Implements RFC 4122 section 4.3.
+    /// Core zero-allocation GUID generation logic.
     /// </summary>
-    private static Guid CreateVersion5(Guid namespaceId, string name)
+    /// <param name="domain">Domain identifier (1=Product, 2=Inventory, 3=SellableItem)</param>
+    /// <param name="version">Schema version (currently 0)</param>
+    /// <param name="input">Business key to hash (SKU, part number, etc.)</param>
+    /// <returns>A deterministic GUID composed of [MacroNamespace][Domain][Version][Hash]</returns>
+    /// <remarks>
+    /// Uses stackalloc for all buffers. No heap allocations.
+    /// </remarks>
+    private static Guid From(int domain, int version, ReadOnlySpan<char> input)
     {
-        // Convert namespace GUID to network byte order (big-endian)
-        var namespaceBytes = namespaceId.ToByteArray();
-        SwapByteOrder(namespaceBytes);
+        // 16-byte buffer for complete GUID
+        Span<byte> guidBytes = stackalloc byte[16];
 
-        // Convert name to UTF-8 bytes
-        var nameBytes = Encoding.UTF8.GetBytes(name);
+        // Write first 8 bytes (structured components)
+        BinaryPrimitives.WriteInt32LittleEndian(guidBytes[0..4], _macroNamespace);
+        BinaryPrimitives.WriteInt16LittleEndian(guidBytes[4..6], (short)domain);
+        BinaryPrimitives.WriteInt16LittleEndian(guidBytes[6..8], (short)version);
 
-        // Concatenate namespace and name
-        var combined = new byte[namespaceBytes.Length + nameBytes.Length];
-        Buffer.BlockCopy(namespaceBytes, 0, combined, 0, namespaceBytes.Length);
-        Buffer.BlockCopy(nameBytes, 0, combined, namespaceBytes.Length, nameBytes.Length);
+        // UTF-8 encode input (worst case: 3 bytes per char)
+        Span<byte> buffer = stackalloc byte[input.Length * 3];
+        int bytesWritten = Encoding.UTF8.GetBytes(input, buffer);
 
-        // Compute SHA-1 hash
-        var hash = SHA1.HashData(combined);
-
-        // Take first 16 bytes
-        var guidBytes = new byte[16];
-        Array.Copy(hash, guidBytes, 16);
-
-        // Set version to 5 (bits 4-7 of time_hi_and_version)
-        guidBytes[6] = (byte)((guidBytes[6] & 0x0F) | 0x50);
-
-        // Set variant to RFC 4122 (bits 6-7 of clock_seq_hi_and_reserved)
-        guidBytes[8] = (byte)((guidBytes[8] & 0x3F) | 0x80);
-
-        // Convert back to host byte order
-        SwapByteOrder(guidBytes);
+        // Hash directly into last 8 bytes
+        XxHash64.Hash(buffer[..bytesWritten], guidBytes[8..16]);
 
         return new Guid(guidBytes);
-    }
-
-    /// <summary>
-    /// Swaps byte order for GUID serialization (network byte order vs host byte order).
-    /// </summary>
-    private static void SwapByteOrder(byte[] guid)
-    {
-        SwapBytes(guid, 0, 3);
-        SwapBytes(guid, 1, 2);
-        SwapBytes(guid, 4, 5);
-        SwapBytes(guid, 6, 7);
-    }
-
-    private static void SwapBytes(byte[] array, int left, int right)
-    {
-        (array[left], array[right]) = (array[right], array[left]);
     }
 }
