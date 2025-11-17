@@ -37,12 +37,13 @@ public abstract class UpdateQuantity_Tests : ProductEndpoints_Tests
             => Output = await Execute(ProductEndpoints.UpdateQuantity, TestId, ValidQuantity);
 
         [Test]
-        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+        public async Task It_should_be_correct() => await Assert.MultipleAsync(() =>
         {
             LastException.ShouldBeNull();
 
             Output.ShouldNotBeNull();
             Output.ShouldBeOfType<Ok<ProductModel>>();
+            return Task.CompletedTask;
         });
     }
 
@@ -59,11 +60,12 @@ public abstract class UpdateQuantity_Tests : ProductEndpoints_Tests
             => Output = await Execute(ProductEndpoints.UpdateQuantity, TestId, ValidQuantity);
 
         [Test]
-        public async Task It_should_be_correct() => await Assert.MultipleAsync(async () =>
+        public async Task It_should_be_correct() => await Assert.MultipleAsync(() =>
         {
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<TestProductException>();
             LastException.Message.ShouldBe("Test error");
+            return Task.CompletedTask;
         });
     }
 }

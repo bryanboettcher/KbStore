@@ -28,8 +28,13 @@ public static class SellableItemRequestFaultExceptionExtensions
 
     private static SellableItemNotFoundException RecreateNotFoundException(IDictionary<string, object> data)
     {
-        if (data.TryGetValue("sellableItemId", out var idObj) && idObj is Guid sellableItemId)
-            return new SellableItemNotFoundException(sellableItemId);
+        if (data.TryGetValue("sellableItemId", out var idObj))
+        {
+            if (idObj is Guid sellableItemId)
+                return new SellableItemNotFoundException(sellableItemId);
+            if (idObj is string idStr && Guid.TryParse(idStr, out var parsedId))
+                return new SellableItemNotFoundException(parsedId);
+        }
         return new SellableItemNotFoundException(Guid.Empty);
     }
 
