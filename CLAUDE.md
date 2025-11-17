@@ -8,31 +8,7 @@ KbStore is a .NET 9 distributed application built with .NET Aspire orchestration
 
 ## Implementation Status
 
-### Current Phase: Phase 0 Complete (MongoDB Foundation)
-**Completed**: Catalog domain fully implemented with Product and Inventory state machines, services, and API endpoints.
-
-| Component | Status | Details |
-|-----------|--------|---------|
-| **Catalog Domain** | FULLY IMPLEMENTED | Product and Inventory state machines, command/query services, PostgreSQL persistence, comprehensive tests |
-| **Storefront Domain** | INFRASTRUCTURE ONLY | MongoDB connection configured, MassTransit registration, but NO domain logic, state machines, or services yet |
-| **ApiService HTTP Gateway** | PARTIAL | Catalog endpoints fully functional, Storefront endpoints not created yet |
-| **ApiService Orchestration** | PLACEHOLDER | Empty consumer classes exist but no cross-domain orchestration logic implemented |
-| **Authentication/Authorization** | NOT IMPLEMENTED | Wide open, planned for future |
-| **Aspire Orchestration** | FULLY IMPLEMENTED | RabbitMQ, PostgreSQL, MongoDB all configured and functional |
-
-### What Works Now:
-- Create, update, query, and delete Products via HTTP API
-- Create, modify, and track Inventory via HTTP API
-- Product and Inventory state machines with full lifecycle management
-- Event publishing from Catalog domain (but no consumers processing them yet)
-- Automated database migrations for Catalog domain
-- Comprehensive test coverage for Catalog domain
-
-### What Doesn't Work Yet:
-- Storefront domain functionality (no state machines, services, or entities)
-- Cross-domain event orchestration (events are published but not consumed)
-- Customer-facing product listings, pricing, or cart operations
-- Authentication or authorization on API endpoints
+**See [docs/IMPLEMENTATION-STATUS.md](docs/IMPLEMENTATION-STATUS.md) for current implementation status and phase tracking.**
 
 For detailed navigation and patterns, see `docs/NAVIGATION.md` and `docs/PATTERNS.md`.
 
@@ -91,16 +67,15 @@ The solution is organized into domain-specific vertical slices under the `Domain
 
 **Key Point**: Catalog does NOT own customer-facing pricing. `Product.Price` is for internal cost tracking.
 
-#### Storefront Domain (Customer-Facing Transactions) - **PLACEHOLDER**
+#### Storefront Domain (Customer-Facing Transactions)
 **Responsibility**: Manages "what customers can buy" and "at what price"
 
-**Implementation Status**: Infrastructure only - MongoDB connection configured, MassTransit registration in place, but no state machines, services, or endpoints implemented yet.
+- **KbStore.Storefront**: SellableItem state machine with full lifecycle (Draft → Published → Hidden/Discontinued)
+- **KbStore.Storefront.Abstractions**: Interface-based contracts following MassTransit idioms, exceptions, service interfaces
+- **KbStore.Storefront.Services**: Command and query services wrapping state machine operations
+- **KbStore.Storefront.Tests**: 9+ comprehensive domain tests
 
-- **KbStore.Storefront**: Infrastructure configured (MongoDB + MassTransit) - **NO DOMAIN LOGIC YET**
-- **KbStore.Storefront.Abstractions**: Project exists but contains no contracts yet - **EMPTY**
-- **KbStore.Storefront.Tests**: Test project exists but no tests yet - **EMPTY**
-
-**Key Point**: When implemented, Storefront will own customer-facing pricing, promotions, and denormalized product read models. Currently awaiting Phase 1 implementation.
+**Key Point**: Storefront owns customer-facing pricing (`BasePrice`), polymorphic payloads for different item types, and uses deterministic GUID generation from SKU for cross-domain correlation.
 
 #### ApiService (Orchestration Layer) - **PARTIALLY IMPLEMENTED**
 **Responsibility**: HTTP gateway + cross-domain orchestration

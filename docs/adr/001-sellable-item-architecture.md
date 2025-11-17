@@ -1,8 +1,16 @@
 ### ADR-001: Polymorphic SellableItem Architecture
 
-**Status:** Adopted
+**Status:** Adopted (Implementation Evolved)
 
 **Date:** 2025-10-28
+
+> **Note (2025-11-17)**: The core architectural decision (polymorphic payload pattern) remains valid and is implemented. However, the contract implementation evolved from C# `record` types to MassTransit-idiomatic **interface hierarchies** for proper polymorphic subscription support. See [changelogs/2025-11-16-storefront-contract-interface-conversion.md](../../changelogs/2025-11-16-storefront-contract-interface-conversion.md) for details.
+>
+> Key changes from original proposal:
+> - Contracts use `interface` inheritance hierarchies, not `record` types
+> - `[ExcludeFromTopology]` applied to base interfaces for proper MassTransit routing
+> - Timestamps use `DateTimeOffset` (CreatedOn/UpdatedOn) instead of `DateTime`
+> - Payload uses `IReadOnlyDictionary<string, object?>` for immutability
 
 #### 1. Context
 
