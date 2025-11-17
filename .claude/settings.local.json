@@ -39,7 +39,9 @@
       "Bash(KbStore.Storefront.Tests/Domains/SellableItems/SellableItem_Reinstate.cs )",
       "Bash(KbStore.Storefront.Tests/Domains/SellableItems/SellableItem_UpdateName.cs )",
       "Bash(KbStore.Storefront.Tests/Domains/SellableItems/SellableItem_UpdatePrice.cs)",
-      "SlashCommand(/orchestrate)"
+      "SlashCommand(/orchestrate)",
+      "WebFetch(domain:www.nuget.org)",
+      "Bash(dotnet restore:*)"
     ],
     "deny": [],
     "ask": []
