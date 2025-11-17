@@ -1,25 +1,21 @@
 namespace KbStore.ApiService.Consumers.Catalog;
 
 using KbStore.Catalog.Abstractions.Contracts;
-using KbStore.Storefront.Abstractions.Exceptions;
-using KbStore.Storefront.Abstractions.Interfaces;
+using KbStore.Storefront.Abstractions.Contracts;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
 
 public class ProductDiscontinuedConsumer : IConsumer<ProductDiscontinued>
 {
-    private readonly ISellableItemCommandService _sellableItemService;
-    private readonly ISellableItemQueryService _sellableItemQueryService;
+    private readonly IRequestClient<DiscontinueSellableItemRequest> _requestClient;
     private readonly ILogger<ProductDiscontinuedConsumer> _logger;
 
     public ProductDiscontinuedConsumer(
-        ISellableItemCommandService sellableItemService,
-        ISellableItemQueryService sellableItemQueryService,
+        IRequestClient<DiscontinueSellableItemRequest> requestClient,
         ILogger<ProductDiscontinuedConsumer> logger)
     {
-        _sellableItemService = sellableItemService;
-        _sellableItemQueryService = sellableItemQueryService;
+        _requestClient = requestClient;
         _logger = logger;
     }
 
@@ -34,55 +30,51 @@ public class ProductDiscontinuedConsumer : IConsumer<ProductDiscontinued>
 
         try
         {
-            // Verify SellableItem exists before discontinuing
-            var existing = await _sellableItemQueryService.GetByIdAsync(
-                msg.ProductId,
+            var response = await _requestClient.GetResponse<DiscontinueSellableItemResponse>(
+                new
+                {
+                    SellableItemId = msg.ProductId,
+                    Timestamp = DateTimeOffset.UtcNow
+                },
                 context.CancellationToken);
 
-            if (existing is null)
-            {
-                // SellableItem doesn't exist - log and skip
-                _logger.LogWarning(
-                    "SellableItem not found for Product {ProductId} - cannot discontinue (may not have been created yet)",
-                    msg.ProductId);
-                return; // Nothing to discontinue
-            }
-
-            // Discontinue the SellableItem (soft-delete preserves order history)
-            await _sellableItemService.DiscontinueAsync(
-                sellableItemId: msg.ProductId,
-                cancellationToken: context.CancellationToken);
-
             _logger.LogInformation(
-                "Successfully discontinued SellableItem for Product {ProductId}",
-                msg.ProductId);
+                "Successfully discontinued SellableItem for Product {ProductId}, SKU {SKU}",
+                msg.ProductId,
+                msg.Sku);
         }
-        catch (SellableItemNotFoundException ex)
+        catch (RequestFaultException ex) when (ex.Message.Contains("not found") || ex.Message.Contains("NotFound"))
         {
-            // SellableItem disappeared between check and discontinue - log and skip
             _logger.LogWarning(
-                ex,
-                "SellableItem not found for Product {ProductId} during discontinue",
-                msg.ProductId);
-            // Do NOT rethrow - this is a valid scenario in distributed systems
+                "SellableItem not found for Product {ProductId}, SKU {SKU} - may not be created yet",
+                msg.ProductId,
+                msg.Sku);
         }
-        catch (SellableItemStateException ex)
+        catch (RequestFaultException ex) when (ex.Message.Contains("already discontinued") || ex.Message.Contains("Discontinued"))
         {
-            // SellableItem may already be discontinued (idempotency)
-            _logger.LogWarning(
+            _logger.LogInformation(
+                "SellableItem for Product {ProductId}, SKU {SKU} is already discontinued - event is idempotent",
+                msg.ProductId,
+                msg.Sku);
+        }
+        catch (RequestFaultException ex)
+        {
+            _logger.LogError(
                 ex,
-                "Cannot discontinue SellableItem for Product {ProductId} - may already be discontinued",
-                msg.ProductId);
-            // Do NOT rethrow - idempotent operation
+                "Failed to discontinue SellableItem for Product {ProductId}, SKU {SKU}: {Error}",
+                msg.ProductId,
+                msg.Sku,
+                ex.Message);
+            throw;
         }
         catch (Exception ex)
         {
-            // Transient failures should be retried by MassTransit
             _logger.LogError(
                 ex,
-                "Failed to discontinue SellableItem for Product {ProductId}",
-                msg.ProductId);
-            throw; // Let MassTransit retry
+                "Failed to discontinue SellableItem for Product {ProductId}, SKU {SKU}",
+                msg.ProductId,
+                msg.Sku);
+            throw;
         }
     }
 }

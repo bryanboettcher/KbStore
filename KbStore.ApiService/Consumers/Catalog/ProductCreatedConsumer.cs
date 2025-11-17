@@ -1,25 +1,21 @@
 namespace KbStore.ApiService.Consumers.Catalog;
 
 using KbStore.Catalog.Abstractions.Contracts;
-using KbStore.Storefront.Abstractions.Exceptions;
-using KbStore.Storefront.Abstractions.Interfaces;
+using KbStore.Storefront.Abstractions.Contracts;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
 
 public class ProductCreatedConsumer : IConsumer<ProductCreated>
 {
-    private readonly ISellableItemCommandService _sellableItemService;
-    private readonly ISellableItemQueryService _sellableItemQueryService;
+    private readonly IRequestClient<CreateSellableItemRequest> _requestClient;
     private readonly ILogger<ProductCreatedConsumer> _logger;
 
     public ProductCreatedConsumer(
-        ISellableItemCommandService sellableItemService,
-        ISellableItemQueryService sellableItemQueryService,
+        IRequestClient<CreateSellableItemRequest> requestClient,
         ILogger<ProductCreatedConsumer> logger)
     {
-        _sellableItemService = sellableItemService;
-        _sellableItemQueryService = sellableItemQueryService;
+        _requestClient = requestClient;
         _logger = logger;
     }
 
@@ -34,60 +30,65 @@ public class ProductCreatedConsumer : IConsumer<ProductCreated>
 
         try
         {
-            // Idempotency check - verify if SellableItem already exists
-            var existing = await _sellableItemQueryService.GetByIdAsync(
-                msg.ProductId,
+            var response = await _requestClient.GetResponse<CreateSellableItemResponse>(
+                new
+                {
+                    ProductId = (Guid?)msg.ProductId,
+                    Sku = msg.Sku,
+                    Name = msg.Name ?? msg.Sku,
+                    Description = (string?)null,
+                    BasePrice = 0m,
+                    ItemType = "Product",
+                    Payload = (IReadOnlyDictionary<string, object?>)new Dictionary<string, object?>
+                    {
+                        ["CatalogSku"] = msg.Sku,
+                        ["Dimensions"] = msg.Dimensions,
+                        ["Quantity"] = msg.Quantity,
+                        ["StockQuantity"] = msg.InventoryId,
+                        ["IsStocked"] = msg.IsStocked
+                    },
+                    Timestamp = DateTimeOffset.UtcNow
+                },
                 context.CancellationToken);
 
-            if (existing is not null)
+            if (response.Message.SellableItemId != msg.ProductId)
             {
-                _logger.LogInformation(
-                    "SellableItem already exists for Product {ProductId}, SKU {SKU} - skipping creation",
-                    msg.ProductId,
-                    msg.Sku);
-                return;
+                _logger.LogError(
+                    "CorrelationId mismatch! Product {ProductId} vs SellableItem {SellableItemId}",
+                    msg.ProductId, response.Message.SellableItemId);
+                throw new InvalidOperationException("Deterministic correlation failed");
             }
 
-            // Create SellableItem in Draft state with cross-domain correlation
-            await _sellableItemService.CreateAsync(
-                sku: msg.Sku,
-                name: msg.Name ?? msg.Sku,  // Fallback to SKU if no name
-                description: null,  // No description in Catalog domain
-                basePrice: 0m,  // Default per architectural decision
-                itemType: "Product",  // Discriminator for polymorphic SellableItem
-                payload: new Dictionary<string, object?>
-                {
-                    ["CatalogSku"] = msg.Sku,
-                    ["Dimensions"] = msg.Dimensions,
-                    ["Quantity"] = msg.Quantity,
-                    ["StockQuantity"] = msg.InventoryId,
-                    ["IsStocked"] = msg.IsStocked
-                },
-                productId: msg.ProductId,  // Cross-domain correlation key
-                cancellationToken: context.CancellationToken);
-
             _logger.LogInformation(
-                "Successfully created SellableItem for Product {ProductId}",
-                msg.ProductId);
-        }
-        catch (SellableItemConflictException ex)
-        {
-            // SKU conflict - likely race condition or event replay
-            _logger.LogWarning(
-                ex,
-                "SellableItem conflict for Product {ProductId}, SKU {SKU} - event may be replayed",
+                "Successfully created SellableItem {SellableItemId} for Product {ProductId}, SKU {SKU}",
+                response.Message.SellableItemId,
                 msg.ProductId,
                 msg.Sku);
-            // Do NOT rethrow - this is expected in distributed systems
+        }
+        catch (RequestFaultException ex) when (ex.Message.Contains("SKU") && ex.Message.Contains("already exists"))
+        {
+            _logger.LogInformation(
+                "SellableItem already exists for SKU {SKU} - event is idempotent",
+                msg.Sku);
+        }
+        catch (RequestFaultException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to create SellableItem for Product {ProductId}, SKU {SKU}: {Error}",
+                msg.ProductId,
+                msg.Sku,
+                ex.Message);
+            throw;
         }
         catch (Exception ex)
         {
-            // Transient failures should be retried by MassTransit
             _logger.LogError(
                 ex,
-                "Failed to create SellableItem for Product {ProductId}",
-                msg.ProductId);
-            throw; // Let MassTransit retry
+                "Failed to create SellableItem for Product {ProductId}, SKU {SKU}",
+                msg.ProductId,
+                msg.Sku);
+            throw;
         }
     }
 }

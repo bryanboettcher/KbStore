@@ -1,25 +1,21 @@
 namespace KbStore.ApiService.Consumers.Catalog;
 
 using KbStore.Catalog.Abstractions.Contracts;
-using KbStore.Storefront.Abstractions.Exceptions;
-using KbStore.Storefront.Abstractions.Interfaces;
+using KbStore.Storefront.Abstractions.Contracts;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
 
 public class ProductNameUpdatedConsumer : IConsumer<ProductNameUpdated>
 {
-    private readonly ISellableItemCommandService _sellableItemService;
-    private readonly ISellableItemQueryService _sellableItemQueryService;
+    private readonly IRequestClient<UpdateSellableItemNameRequest> _requestClient;
     private readonly ILogger<ProductNameUpdatedConsumer> _logger;
 
     public ProductNameUpdatedConsumer(
-        ISellableItemCommandService sellableItemService,
-        ISellableItemQueryService sellableItemQueryService,
+        IRequestClient<UpdateSellableItemNameRequest> requestClient,
         ILogger<ProductNameUpdatedConsumer> logger)
     {
-        _sellableItemService = sellableItemService;
-        _sellableItemQueryService = sellableItemQueryService;
+        _requestClient = requestClient;
         _logger = logger;
     }
 
@@ -28,92 +24,59 @@ public class ProductNameUpdatedConsumer : IConsumer<ProductNameUpdated>
         var msg = context.Message;
 
         _logger.LogInformation(
-            "Updating SellableItem name for Product {ProductId}, new name: {Name}",
+            "Updating SellableItem name for Product {ProductId}, SKU {SKU}, new name: {Name}",
             msg.ProductId,
+            msg.Sku,
             msg.Name);
 
         try
         {
-            // Verify SellableItem exists (handle out-of-order events)
-            var existing = await _sellableItemQueryService.GetByIdAsync(
-                msg.ProductId,
+            var response = await _requestClient.GetResponse<UpdateSellableItemResponse>(
+                new
+                {
+                    SellableItemId = msg.ProductId,
+                    Name = msg.Name ?? msg.Sku,
+                    Timestamp = DateTimeOffset.UtcNow
+                },
                 context.CancellationToken);
 
-            if (existing is null)
-            {
-                // Create-if-missing pattern: SellableItem doesn't exist yet
-                _logger.LogWarning(
-                    "SellableItem not found for Product {ProductId} - creating it (out-of-order event)",
-                    msg.ProductId);
-
-                await _sellableItemService.CreateAsync(
-                    sku: msg.Sku,
-                    name: msg.Name ?? msg.Sku,
-                    description: null,
-                    basePrice: 0m,
-                    itemType: "Product",
-                    payload: new Dictionary<string, object?>
-                    {
-                        ["CatalogSku"] = msg.Sku,
-                        ["Dimensions"] = msg.Dimensions,
-                        ["Quantity"] = msg.Quantity,
-                        ["StockQuantity"] = msg.InventoryId,
-                        ["IsStocked"] = msg.IsStocked
-                    },
-                    productId: msg.ProductId,
-                    cancellationToken: context.CancellationToken);
-
-                _logger.LogInformation(
-                    "Created SellableItem for Product {ProductId} during name update",
-                    msg.ProductId);
-                return;
-            }
-
-            // Update existing SellableItem name
-            await _sellableItemService.UpdateNameAsync(
-                sellableItemId: msg.ProductId,
-                name: msg.Name ?? msg.Sku,
-                cancellationToken: context.CancellationToken);
-
             _logger.LogInformation(
-                "Successfully updated SellableItem name for Product {ProductId}",
-                msg.ProductId);
+                "Successfully updated SellableItem name for Product {ProductId}, SKU {SKU}",
+                msg.ProductId,
+                msg.Sku);
         }
-        catch (SellableItemNotFoundException ex)
+        catch (RequestFaultException ex) when (ex.Message.Contains("not found") || ex.Message.Contains("NotFound"))
         {
-            // SellableItem disappeared between check and update - log and skip
             _logger.LogWarning(
-                ex,
-                "SellableItem not found for Product {ProductId} during update",
-                msg.ProductId);
-            // Do NOT rethrow - this is a valid scenario in distributed systems
+                "SellableItem not found for Product {ProductId}, SKU {SKU} - may not be created yet",
+                msg.ProductId,
+                msg.Sku);
         }
-        catch (SellableItemStateException ex)
+        catch (RequestFaultException ex) when (ex.Message.Contains("discontinued") || ex.Message.Contains("Discontinued"))
         {
-            // SellableItem is discontinued - cannot update
             _logger.LogWarning(
-                ex,
-                "Cannot update discontinued SellableItem for Product {ProductId}",
-                msg.ProductId);
-            // Do NOT rethrow - this is a valid business rule
+                "Cannot update discontinued SellableItem for Product {ProductId}, SKU {SKU}",
+                msg.ProductId,
+                msg.Sku);
         }
-        catch (SellableItemConflictException ex)
+        catch (RequestFaultException ex)
         {
-            // SKU conflict during create-if-missing
-            _logger.LogWarning(
+            _logger.LogError(
                 ex,
-                "SellableItem conflict for Product {ProductId} during name update",
-                msg.ProductId);
-            // Do NOT rethrow - event may be replayed
+                "Failed to update SellableItem name for Product {ProductId}, SKU {SKU}: {Error}",
+                msg.ProductId,
+                msg.Sku,
+                ex.Message);
+            throw;
         }
         catch (Exception ex)
         {
-            // Transient failures should be retried by MassTransit
             _logger.LogError(
                 ex,
-                "Failed to update SellableItem name for Product {ProductId}",
-                msg.ProductId);
-            throw; // Let MassTransit retry
+                "Failed to update SellableItem name for Product {ProductId}, SKU {SKU}",
+                msg.ProductId,
+                msg.Sku);
+            throw;
         }
     }
 }
