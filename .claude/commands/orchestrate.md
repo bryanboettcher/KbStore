@@ -309,6 +309,7 @@ Single message with multiple Task tool calls:
 ❌ **Skipping code-review** - Issues caught late are expensive
 ❌ **Not parallelizing** - Sequential execution is slower
 ❌ **Forgetting changelog-manager** - Documentation falls behind
+❌ **Project-specific builds** - Building individual projects misses cross-project integration issues
 
 ---
 
@@ -317,11 +318,13 @@ Single message with multiple Task tool calls:
 Before considering a feature "complete":
 
 1. ✅ **Code Review Pass** - No CRITICAL or HIGH issues
-2. ✅ **Build Succeeds** - `dotnet build` with no errors
-3. ✅ **Tests Pass** - All relevant tests passing
+2. ✅ **Build Succeeds** - `dotnet build` (SOLUTION-LEVEL, not project-specific) with no errors
+3. ✅ **Tests Pass** - `dotnet test` or `dotnet test --filter "..."` (solution-level, can filter)
 4. ✅ **Services Registered** - DI container can resolve
 5. ✅ **Committed** - git-workflow-manager created commit
 6. ✅ **Documented** - changelog-manager updated CHANGELOG.md
+
+**IMPORTANT**: Always use solution-level commands for builds and tests. Project-specific builds (`dotnet build KbStore.Catalog`) can miss missing references, interface mismatches, and circular dependencies. Only use project-specific for debugging compilation errors, never as a primary verification step.
 
 ---
 

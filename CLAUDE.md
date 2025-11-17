@@ -238,25 +238,30 @@ The exact boundary between "trivial enough to handle directly" and "delegate to 
 
 ## Build, Test, and Development Commands
 
+**IMPORTANT: Always prefer solution-level commands over project-specific commands.** Building or testing individual projects can miss cross-project integration issues (missing references, interface mismatches, circular dependencies). Project-specific commands should only be used for:
+- Targeted test filtering with `--filter` (still uses solution, just filters results)
+- Debugging a specific project's compilation errors
+
 ### Build
 ```bash
-# Build entire solution
+# Build entire solution (PREFERRED)
 dotnet build
 
-# Build specific project
+# Build specific project (AVOID unless debugging)
 dotnet build KbStore.Catalog
 ```
 
 ### Test
 ```bash
-# Run all tests
+# Run all tests (PREFERRED)
 dotnet test
 
-# Run tests for specific project
-dotnet test KbStore.Catalog.Tests
-
-# Run specific test by filter
+# Run filtered tests (PREFERRED - uses solution with filter)
 dotnet test --filter "FullyQualifiedName~Product_Create"
+dotnet test --filter "FullyQualifiedName~Storefront"
+
+# Run tests for specific project (AVOID - may miss integration issues)
+dotnet test KbStore.Catalog.Tests
 
 # List all tests without running
 dotnet test --list-tests
