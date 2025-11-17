@@ -36,7 +36,7 @@ public abstract class EventingTestBase
         Services.AddMassTransitTestHarness(conf =>
         {
             conf.SetTestTimeouts(
-                testTimeout: TimeSpan.FromSeconds(5), 
+                testTimeout: TimeSpan.FromSeconds(5),
                 testInactivityTimeout: TimeSpan.FromSeconds(1)
             );
 
@@ -48,6 +48,10 @@ public abstract class EventingTestBase
         });
 
         RootProvider = Services.BuildServiceProvider(true);
+
+        // START HARNESS ONCE PER FIXTURE
+        Harness = RootProvider.GetRequiredService<ITestHarness>();
+        await Harness.Start();
     }
 
     [SetUp]
@@ -55,12 +59,11 @@ public abstract class EventingTestBase
     {
         await OnPreSetup();
 
-        Harness = RootProvider!.GetRequiredService<ITestHarness>();
+        // Just create scoped provider, harness already running
         ScopedProvider = RootProvider!.CreateScope();
 
-        await Harness.Start();
         await OnPostSetup();
-        
+
         Arrange();
 
         LastException = null;
@@ -78,8 +81,8 @@ public abstract class EventingTestBase
     public async Task Teardown()
     {
         await OnPreTeardown();
-        
-        await Harness.Stop();
+
+        // Don't stop harness, just dispose scoped provider
 
         await OnPostTeardown();
 
@@ -89,14 +92,17 @@ public abstract class EventingTestBase
     [OneTimeTearDown]
     public async Task FinalizeOnce()
     {
+        // STOP HARNESS ONCE PER FIXTURE
+        await Harness.Stop();
+
         await DisposeAsync(Harness);
         await DisposeAsync(RootProvider);
 
         return;
 
-        static ValueTask DisposeAsync(object? service) 
-            => service is IAsyncDisposable dispose 
-                ? dispose.DisposeAsync() 
+        static ValueTask DisposeAsync(object? service)
+            => service is IAsyncDisposable dispose
+                ? dispose.DisposeAsync()
                 : ValueTask.CompletedTask;
     }
 
