@@ -6,7 +6,7 @@ using KbStore.Catalog.Abstractions.Contracts;
 public class TestProductModel : ProductModel
 {
     public Guid ProductId { get; set; }
-    public string Sku { get; set; }
+    public required string Sku { get; set; }
     public string? Name { get; set; }
     public ProductDimensions? Dimensions { get; set; }
     public int Quantity { get; set; }

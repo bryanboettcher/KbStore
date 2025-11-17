@@ -115,7 +115,7 @@ public class SellableItem_Discontinue : StateMachine_Tests<SellableItemStateMach
         }
 
         [Test]
-        public async Task It_should_throw_state_exception() => await Assert.MultipleAsync(async () =>
+        public async Task It_should_throw_state_exception() => await Assert.MultipleAsync(() =>
         {
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<RequestFaultException>();
@@ -123,6 +123,7 @@ public class SellableItem_Discontinue : StateMachine_Tests<SellableItemStateMach
             var saga = SagaHarness.Sagas.Contains(ExistingId);
             saga.ShouldNotBeNull();
             saga.CurrentState.ShouldBe(SellableItemStates.Discontinued);
+            return Task.CompletedTask;
         });
     }
 }

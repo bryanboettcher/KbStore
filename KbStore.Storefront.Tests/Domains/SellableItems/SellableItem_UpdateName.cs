@@ -82,7 +82,7 @@ public class SellableItem_UpdateName : StateMachine_Tests<SellableItemStateMachi
         }
 
         [Test]
-        public async Task It_should_update_successfully() => await Assert.MultipleAsync(async () =>
+        public async Task It_should_update_successfully() => await Assert.MultipleAsync(() =>
         {
             LastException.ShouldBeNull();
 
@@ -93,6 +93,7 @@ public class SellableItem_UpdateName : StateMachine_Tests<SellableItemStateMachi
             saga.ShouldNotBeNull();
             saga.Name.ShouldBe("Updated Name");
             saga.CurrentState.ShouldBe(SellableItemStates.Published);
+            return Task.CompletedTask;
         });
     }
 
@@ -117,7 +118,7 @@ public class SellableItem_UpdateName : StateMachine_Tests<SellableItemStateMachi
         }
 
         [Test]
-        public async Task It_should_update_successfully() => await Assert.MultipleAsync(async () =>
+        public async Task It_should_update_successfully() => await Assert.MultipleAsync(() =>
         {
             LastException.ShouldBeNull();
 
@@ -128,6 +129,7 @@ public class SellableItem_UpdateName : StateMachine_Tests<SellableItemStateMachi
             saga.ShouldNotBeNull();
             saga.Name.ShouldBe("Updated Name");
             saga.CurrentState.ShouldBe(SellableItemStates.Hidden);
+            return Task.CompletedTask;
         });
     }
 
@@ -152,7 +154,7 @@ public class SellableItem_UpdateName : StateMachine_Tests<SellableItemStateMachi
         }
 
         [Test]
-        public async Task It_should_throw_state_exception() => await Assert.MultipleAsync(async () =>
+        public async Task It_should_throw_state_exception() => await Assert.MultipleAsync(() =>
         {
             LastException.ShouldNotBeNull();
             LastException.ShouldBeOfType<RequestFaultException>();
@@ -161,6 +163,7 @@ public class SellableItem_UpdateName : StateMachine_Tests<SellableItemStateMachi
             saga.ShouldNotBeNull();
             saga.Name.ShouldBe("Discontinued Item");
             saga.CurrentState.ShouldBe(SellableItemStates.Discontinued);
+            return Task.CompletedTask;
         });
     }
 }

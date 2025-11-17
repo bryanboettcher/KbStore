@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Treat specific warnings as errors for better code quality -->
+    <WarningsAsErrors>$(WarningsAsErrors);CS0108;CS8618</WarningsAsErrors>
+  </PropertyGroup>
+</Project>

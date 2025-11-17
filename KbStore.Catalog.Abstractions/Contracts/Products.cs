@@ -33,7 +33,7 @@ public interface ProductCommand : CorrelatedBy<Guid>
     Guid ProductId { get; }
     DateTimeOffset Timestamp { get; }
 
-    Guid CorrelationId => ProductId;
+    new Guid CorrelationId => ProductId;
 }
 
 public interface ProductModel : CorrelatedBy<Guid>
@@ -52,7 +52,7 @@ public interface ProductModel : CorrelatedBy<Guid>
     DateTimeOffset CreatedOn { get; }
     DateTimeOffset UpdatedOn { get; }
 
-    Guid CorrelationId => ProductId;
+    new Guid CorrelationId => ProductId;
 }
 
 public interface BaseProductEvent : ProductModel;

@@ -19,7 +19,7 @@ public interface InventoryCommand : CorrelatedBy<Guid>
     Guid InventoryId { get; }
     DateTimeOffset Timestamp { get; }
 
-    Guid CorrelationId => InventoryId;
+    new Guid CorrelationId => InventoryId;
 }
 
 public interface InventoryModel : CorrelatedBy<Guid>
@@ -33,7 +33,7 @@ public interface InventoryModel : CorrelatedBy<Guid>
     DateTimeOffset CreatedOn { get; }
     DateTimeOffset UpdatedOn { get; }
 
-    Guid CorrelationId => InventoryId;
+    new Guid CorrelationId => InventoryId;
 }
 
 public interface BaseInventoryEvent : InventoryModel;

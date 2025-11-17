@@ -11,7 +11,7 @@ public interface SellableItemCommand : CorrelatedBy<Guid>
     Guid SellableItemId { get; }
     DateTimeOffset Timestamp { get; }
 
-    Guid CorrelationId => SellableItemId;
+    new Guid CorrelationId => SellableItemId;
 }
 
 [ExcludeFromTopology]
@@ -30,7 +30,7 @@ public interface SellableItemModel : CorrelatedBy<Guid>
     DateTimeOffset CreatedOn { get; }
     DateTimeOffset UpdatedOn { get; }
 
-    Guid CorrelationId => SellableItemId;
+    new Guid CorrelationId => SellableItemId;
 }
 
 [ExcludeFromTopology]
