@@ -49,7 +49,7 @@ public static class HostBuilderExtensions
 
         var collection = database.GetCollection<SellableItemEntity>(CollectionNames.SellableItems);
 
-        var indexKeys = Builders<SellableItemEntity>.IndexKeys.Ascending(x => x.SKU);
+        var indexKeys = Builders<SellableItemEntity>.IndexKeys.Ascending(x => x.Sku);
         var indexOptions = new CreateIndexOptions { Unique = true };
         var indexModel = new CreateIndexModel<SellableItemEntity>(indexKeys, indexOptions);
 
