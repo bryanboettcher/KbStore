@@ -11,21 +11,21 @@ using Shouldly;
 public class SellableItem_Hide : StateMachine_Tests<SellableItemStateMachine, SellableItemEntity>
 {
     protected IRequestClient<HideSellableItemRequest> Client = null!;
-    protected Response<SellableItemResponse> Response = null!;
+    protected Response<HideSellableItemResponse> Response = null!;
 
     protected override void Arrange()
     {
-
         Harness.AddOrUpdateSagaInstance<SellableItemEntity>(ExistingId, entity =>
         {
             entity.CurrentState = SellableItemStates.Published;
-            entity.SKU = "PUB-SKU";
+            entity.Sku = "PUB-SKU";
             entity.Name = "Published Item";
             entity.BasePrice = 50.00m;
             entity.ItemType = "simple-product";
             entity.Payload = new Dictionary<string, object?>();
             entity.IsAvailable = true;
-            entity.CreatedAt = Now;
+            entity.CreatedOn = Now;
+            entity.UpdatedOn = Now;
         });
 
         Client = Harness.Bus.CreateRequestClient<HideSellableItemRequest>();
@@ -33,9 +33,10 @@ public class SellableItem_Hide : StateMachine_Tests<SellableItemStateMachine, Se
 
     protected override async Task Act()
     {
-        Response = await Client.GetResponse<SellableItemResponse>(new
+        Response = await Client.GetResponse<HideSellableItemResponse>(new
         {
-            SellableItemId = ExistingId
+            SellableItemId = ExistingId,
+            Timestamp = DateTimeOffset.UtcNow
         });
     }
 
@@ -47,14 +48,11 @@ public class SellableItem_Hide : StateMachine_Tests<SellableItemStateMachine, Se
             LastException.ShouldBeNull();
 
             Response.ShouldNotBeNull();
-            Response.Message.Id.ShouldBe(ExistingId);
-            Response.Message.State.ShouldBe("Hidden");
-            Response.Message.UpdatedAt.ShouldNotBeNull();
+            Response.Message.SellableItemId.ShouldBe(ExistingId);
 
             var saga = SagaHarness.Sagas.Contains(ExistingId);
             saga.ShouldNotBeNull();
             saga.CurrentState.ShouldBe(SellableItemStates.Hidden);
-            saga.UpdatedAt.ShouldNotBeNull();
 
             (await Harness.Published.Any<SellableItemHidden>()).ShouldBeTrue();
         });
@@ -69,14 +67,14 @@ public class SellableItem_Hide : StateMachine_Tests<SellableItemStateMachine, Se
             Harness.AddOrUpdateSagaInstance<SellableItemEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = SellableItemStates.Discontinued;
-                entity.SKU = "DISC-SKU";
+                entity.Sku = "DISC-SKU";
                 entity.Name = "Discontinued Item";
                 entity.BasePrice = 100.00m;
                 entity.ItemType = "simple-product";
                 entity.Payload = new Dictionary<string, object?>();
                 entity.IsAvailable = false;
-                entity.CreatedAt = Now;
-                entity.UpdatedAt = Now;
+                entity.CreatedOn = Now;
+                entity.UpdatedOn = Now;
             });
         }
 

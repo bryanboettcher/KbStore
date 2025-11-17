@@ -11,7 +11,7 @@ using Shouldly;
 public class SellableItem_Create : StateMachine_Tests<SellableItemStateMachine, SellableItemEntity>
 {
     protected IRequestClient<CreateSellableItemRequest> Client = null!;
-    protected Response<SellableItemResponse> Response = null!;
+    protected Response<CreateSellableItemResponse> Response = null!;
 
     protected override void Arrange()
     {
@@ -20,9 +20,9 @@ public class SellableItem_Create : StateMachine_Tests<SellableItemStateMachine, 
 
     protected override async Task Act()
     {
-        Response = await Client.GetResponse<SellableItemResponse>(new
+        Response = await Client.GetResponse<CreateSellableItemResponse>(new
         {
-            SKU = "TEST-SKU-001",
+            Sku = "TEST-SKU-001",
             Name = "Test Product",
             Description = "Test product description",
             BasePrice = 99.99m,
@@ -31,7 +31,8 @@ public class SellableItem_Create : StateMachine_Tests<SellableItemStateMachine, 
             {
                 { "color", "blue" },
                 { "size", "medium" }
-            }
+            },
+            Timestamp = DateTimeOffset.UtcNow
         });
     }
 
@@ -43,28 +44,27 @@ public class SellableItem_Create : StateMachine_Tests<SellableItemStateMachine, 
             LastException.ShouldBeNull();
 
             Response.ShouldNotBeNull();
-            Response.Message.SKU.ShouldBe("TEST-SKU-001");
+            Response.Message.Sku.ShouldBe("TEST-SKU-001");
             Response.Message.Name.ShouldBe("Test Product");
             Response.Message.Description.ShouldBe("Test product description");
             Response.Message.BasePrice.ShouldBe(99.99m);
             Response.Message.ItemType.ShouldBe("simple-product");
-            Response.Message.State.ShouldBe("Draft");
             Response.Message.IsAvailable.ShouldBeTrue();
             Response.Message.Payload.ShouldNotBeNull();
             Response.Message.Payload["color"].ShouldBe("blue");
             Response.Message.Payload["size"].ShouldBe("medium");
 
-            var sagaId = Response.Message.Id;
+            var sagaId = Response.Message.SellableItemId;
             var saga = SagaHarness.Sagas.Contains(sagaId);
             saga.ShouldNotBeNull();
             saga.CorrelationId.ShouldBe(sagaId);
             saga.CurrentState.ShouldBe(SellableItemStates.Draft);
-            saga.SKU.ShouldBe("TEST-SKU-001");
+            saga.Sku.ShouldBe("TEST-SKU-001");
             saga.Name.ShouldBe("Test Product");
             saga.BasePrice.ShouldBe(99.99m);
             saga.IsAvailable.ShouldBeTrue();
-            saga.CreatedAt.ShouldNotBe(default);
-            saga.UpdatedAt.ShouldBeNull();
+            saga.CreatedOn.ShouldNotBe(default);
+            saga.UpdatedOn.ShouldBe(saga.CreatedOn);
 
             (await Harness.Published.Any<SellableItemCreated>()).ShouldBeTrue();
         });
@@ -74,14 +74,15 @@ public class SellableItem_Create : StateMachine_Tests<SellableItemStateMachine, 
     {
         protected override async Task Act()
         {
-            Response = await Client.GetResponse<SellableItemResponse>(new
+            Response = await Client.GetResponse<CreateSellableItemResponse>(new
             {
-                SKU = "MIN-SKU",
+                Sku = "MIN-SKU",
                 Name = "Minimal Product",
                 Description = (string?)null,
                 BasePrice = 10.00m,
                 ItemType = "simple",
-                Payload = new Dictionary<string, object?>()
+                Payload = new Dictionary<string, object?>(),
+                Timestamp = DateTimeOffset.UtcNow
             });
         }
 
@@ -91,13 +92,12 @@ public class SellableItem_Create : StateMachine_Tests<SellableItemStateMachine, 
             LastException.ShouldBeNull();
 
             Response.ShouldNotBeNull();
-            Response.Message.SKU.ShouldBe("MIN-SKU");
+            Response.Message.Sku.ShouldBe("MIN-SKU");
             Response.Message.Name.ShouldBe("Minimal Product");
             Response.Message.Description.ShouldBeNull();
             Response.Message.BasePrice.ShouldBe(10.00m);
-            Response.Message.State.ShouldBe("Draft");
 
-            var sagaId = Response.Message.Id;
+            var sagaId = Response.Message.SellableItemId;
             var saga = SagaHarness.Sagas.Contains(sagaId);
             saga.ShouldNotBeNull();
             saga.CurrentState.ShouldBe(SellableItemStates.Draft);

@@ -1,7 +1,6 @@
 namespace KbStore.Storefront.Abstractions.Interfaces;
 
 using Contracts;
-using KbStore.Abstractions;
 
 
 /// <summary>
@@ -13,7 +12,7 @@ public interface ISellableItemQueryService
     /// Retrieves a sellable item by its unique identifier.
     /// </summary>
     /// <returns>The sellable item if found; otherwise null.</returns>
-    Task<SellableItemResponse?> GetByIdAsync(
+    Task<SellableItemModel?> GetByIdAsync(
         Guid sellableItemId,
         CancellationToken cancellationToken = default);
 
@@ -21,26 +20,26 @@ public interface ISellableItemQueryService
     /// Retrieves a sellable item by its SKU (stock keeping unit).
     /// </summary>
     /// <returns>The sellable item if found; otherwise null.</returns>
-    Task<SellableItemResponse?> GetBySkuAsync(
+    Task<SellableItemModel?> GetBySkuAsync(
         string sku,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves all sellable items.
     /// </summary>
-    Task<List<SellableItemResponse>> GetAllAsync(
+    Task<List<SellableItemModel>> GetAllAsync(
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves all sellable items of a specific type.
     /// </summary>
-    Task<List<SellableItemResponse>> GetByItemTypeAsync(
+    Task<List<SellableItemModel>> GetByItemTypeAsync(
         string itemType,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves all published (visible to customers) sellable items.
     /// </summary>
-    Task<List<SellableItemResponse>> GetPublishedAsync(
+    Task<List<SellableItemModel>> GetPublishedAsync(
         CancellationToken cancellationToken = default);
 }

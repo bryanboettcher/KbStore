@@ -16,8 +16,8 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
 
         Event(() => Created, e =>
         {
-            e.CorrelateBy((saga, context) => saga.SKU == context.Message.SKU);
-            e.SelectId(context => DeterministicGuid.FromSellableItemSku(context.Message.SKU));
+            e.CorrelateBy((saga, context) => saga.Sku == context.Message.Sku);
+            e.SelectId(context => DeterministicGuid.FromSellableItemSku(context.Message.Sku));
             e.InsertOnInitial = true;
         });
         Event(() => NameUpdated);
@@ -33,161 +33,117 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
                 .Then(ValidateCreationRequest)
                 .Then(SetProperties)
                 .TransitionTo(Draft)
-                .RespondAsync(CreateResponse)
-                .PublishAsync(CreateEvent)
+                .RespondAsync(Message<CreateSellableItemResponse>)
+                .PublishAsync(Message<SellableItemCreated>)
         );
 
         During(Draft,
             When(Created)
-                .Then(context => throw SellableItemConflictException.DuplicateSku(context.Message.SKU)),
+                .Then(context => throw SellableItemConflictException.DuplicateSku(context.Message.Sku)),
 
             When(PublishRequested)
                 .TransitionTo(Published)
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse)
-                .PublishAsync(context => Task.FromResult(new SellableItemPublished
-                {
-                    SellableItemId = context.Saga.CorrelationId,
-                    PublishedAt = DateTime.UtcNow
-                })),
+                .RespondAsync(Message<PublishSellableItemResponse>)
+                .PublishAsync(Message<SellableItemPublished>),
 
             When(DeleteRequested)
                 .Then(UpdateTimestamp)
-                .PublishAsync(context => Task.FromResult(new SellableItemDeleted
-                {
-                    SellableItemId = context.Saga.CorrelationId,
-                    DeletedAt = DateTime.UtcNow
-                }))
+                .RespondAsync(Message<DeleteSellableItemResponse>)
+                .PublishAsync(Message<SellableItemDeleted>)
                 .Finalize(),
 
             When(NameUpdated)
                 .Then(ValidateName)
                 .Then(context => context.Saga.Name = context.Message.Name)
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse),
+                .RespondAsync(Message<UpdateSellableItemResponse>),
 
             When(PriceUpdated)
                 .Then(ValidatePrice)
                 .ThenAsync(async context =>
                 {
-                    var oldPrice = context.Saga.BasePrice;
                     context.Saga.BasePrice = context.Message.BasePrice;
-                    await context.Publish<SellableItemPriceChanged>(new
-                    {
-                        SellableItemId = context.Saga.CorrelationId,
-                        OldPrice = oldPrice,
-                        NewPrice = context.Saga.BasePrice,
-                        ChangedAt = DateTime.UtcNow
-                    });
+                    await context.Publish<SellableItemPriceChanged>(CreateModelPayload(context.Saga));
                 })
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse)
+                .RespondAsync(Message<UpdateSellableItemResponse>)
         );
 
         During(Published,
             When(Created)
-                .Then(context => throw SellableItemConflictException.DuplicateSku(context.Message.SKU)),
+                .Then(context => throw SellableItemConflictException.DuplicateSku(context.Message.Sku)),
 
             When(HideRequested)
                 .TransitionTo(Hidden)
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse)
-                .PublishAsync(context => Task.FromResult(new SellableItemHidden
-                {
-                    SellableItemId = context.Saga.CorrelationId,
-                    HiddenAt = DateTime.UtcNow
-                })),
+                .RespondAsync(Message<HideSellableItemResponse>)
+                .PublishAsync(Message<SellableItemHidden>),
 
             When(DiscontinueRequested)
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse)
-                .PublishAsync(context => Task.FromResult(new SellableItemDiscontinued
-                {
-                    SellableItemId = context.Saga.CorrelationId,
-                    DiscontinuedAt = DateTime.UtcNow
-                })),
+                .RespondAsync(Message<DiscontinueSellableItemResponse>)
+                .PublishAsync(Message<SellableItemDiscontinued>),
 
             When(NameUpdated)
                 .Then(ValidateName)
                 .Then(context => context.Saga.Name = context.Message.Name)
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse),
+                .RespondAsync(Message<UpdateSellableItemResponse>),
 
             When(PriceUpdated)
                 .Then(ValidatePrice)
                 .ThenAsync(async context =>
                 {
-                    var oldPrice = context.Saga.BasePrice;
                     context.Saga.BasePrice = context.Message.BasePrice;
-                    await context.Publish<SellableItemPriceChanged>(new
-                    {
-                        SellableItemId = context.Saga.CorrelationId,
-                        OldPrice = oldPrice,
-                        NewPrice = context.Saga.BasePrice,
-                        ChangedAt = DateTime.UtcNow
-                    });
+                    await context.Publish<SellableItemPriceChanged>(CreateModelPayload(context.Saga));
                 })
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse)
+                .RespondAsync(Message<UpdateSellableItemResponse>)
         );
 
         During(Hidden,
             When(Created)
-                .Then(context => throw SellableItemConflictException.DuplicateSku(context.Message.SKU)),
+                .Then(context => throw SellableItemConflictException.DuplicateSku(context.Message.Sku)),
 
             When(PublishRequested)
                 .TransitionTo(Published)
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse)
-                .PublishAsync(context => Task.FromResult(new SellableItemPublished
-                {
-                    SellableItemId = context.Saga.CorrelationId,
-                    PublishedAt = DateTime.UtcNow
-                })),
+                .RespondAsync(Message<PublishSellableItemResponse>)
+                .PublishAsync(Message<SellableItemPublished>),
 
             When(DiscontinueRequested)
                 .TransitionTo(Discontinued)
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse)
-                .PublishAsync(context => Task.FromResult(new SellableItemDiscontinued
-                {
-                    SellableItemId = context.Saga.CorrelationId,
-                    DiscontinuedAt = DateTime.UtcNow
-                })),
+                .RespondAsync(Message<DiscontinueSellableItemResponse>)
+                .PublishAsync(Message<SellableItemDiscontinued>),
 
             When(NameUpdated)
                 .Then(ValidateName)
                 .Then(context => context.Saga.Name = context.Message.Name)
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse),
+                .RespondAsync(Message<UpdateSellableItemResponse>),
 
             When(PriceUpdated)
                 .Then(ValidatePrice)
                 .ThenAsync(async context =>
                 {
-                    var oldPrice = context.Saga.BasePrice;
                     context.Saga.BasePrice = context.Message.BasePrice;
-                    await context.Publish<SellableItemPriceChanged>(new
-                    {
-                        SellableItemId = context.Saga.CorrelationId,
-                        OldPrice = oldPrice,
-                        NewPrice = context.Saga.BasePrice,
-                        ChangedAt = DateTime.UtcNow
-                    });
+                    await context.Publish<SellableItemPriceChanged>(CreateModelPayload(context.Saga));
                 })
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse)
+                .RespondAsync(Message<UpdateSellableItemResponse>)
         );
 
         During(Discontinued,
             When(Created)
-                .Then(context => throw SellableItemConflictException.DuplicateSku(context.Message.SKU)),
+                .Then(context => throw SellableItemConflictException.DuplicateSku(context.Message.Sku)),
 
             When(ReinstateRequested)
                 .TransitionTo(Draft)
                 .Then(UpdateTimestamp)
-                .RespondAsync(CreateResponse),
+                .RespondAsync(Message<ReinstateSellableItemResponse>),
 
             When(NameUpdated)
                 .Then(context => throw new SellableItemStateException("Discontinued", "update name")),
@@ -226,7 +182,7 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
     {
         var msg = context.Message;
 
-        if (string.IsNullOrWhiteSpace(msg.SKU))
+        if (string.IsNullOrWhiteSpace(msg.Sku))
             throw new SellableItemValidationException("SKU cannot be empty");
 
         if (string.IsNullOrWhiteSpace(msg.Name))
@@ -254,57 +210,42 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
     private static void SetProperties(BehaviorContext<SellableItemEntity, CreateSellableItemRequest> context)
     {
         context.Saga.ProductId = context.Message.ProductId;
-        context.Saga.SKU = context.Message.SKU;
+        context.Saga.Sku = context.Message.Sku;
         context.Saga.Name = context.Message.Name;
         context.Saga.Description = context.Message.Description;
         context.Saga.BasePrice = context.Message.BasePrice;
         context.Saga.ItemType = context.Message.ItemType;
-        context.Saga.Payload = context.Message.Payload;
+        context.Saga.Payload = context.Message.Payload.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         context.Saga.IsAvailable = true;
-        context.Saga.CreatedAt = DateTime.UtcNow;
-        context.Saga.UpdatedAt = null;
+        context.Saga.CreatedOn = DateTimeOffset.UtcNow;
+        context.Saga.UpdatedOn = context.Saga.CreatedOn;
     }
 
     private static void UpdateTimestamp(BehaviorContext<SellableItemEntity> context)
     {
-        context.Saga.UpdatedAt = DateTime.UtcNow;
+        context.Saga.UpdatedOn = DateTimeOffset.UtcNow;
     }
 
-    private static Task<SellableItemCreated> CreateEvent(BehaviorContext<SellableItemEntity> context)
-        => Task.FromResult(new SellableItemCreated
-        {
-            SellableItemId = context.Saga.CorrelationId,
-            SKU = context.Saga.SKU,
-            Name = context.Saga.Name,
-            BasePrice = context.Saga.BasePrice,
-            ItemType = context.Saga.ItemType,
-            CreatedAt = context.Saga.CreatedAt
-        });
-
-    private static Task<SellableItemResponse> CreateResponse(BehaviorContext<SellableItemEntity> context)
-        => Task.FromResult(new SellableItemResponse
-        {
-            Id = context.Saga.CorrelationId,
-            ProductId = context.Saga.ProductId,
-            SKU = context.Saga.SKU,
-            Name = context.Saga.Name,
-            Description = context.Saga.Description,
-            BasePrice = context.Saga.BasePrice,
-            ItemType = context.Saga.ItemType,
-            Payload = context.Saga.Payload,
-            State = GetStateName(context.Saga.CurrentState),
-            IsAvailable = context.Saga.IsAvailable,
-            Version = context.Saga.Version,
-            CreatedAt = context.Saga.CreatedAt,
-            UpdatedAt = context.Saga.UpdatedAt
-        });
-
-    private static string GetStateName(int state) => state switch
+    private static object CreateModelPayload(SellableItemEntity saga)
     {
-        SellableItemStates.Draft => "Draft",
-        SellableItemStates.Published => "Published",
-        SellableItemStates.Hidden => "Hidden",
-        SellableItemStates.Discontinued => "Discontinued",
-        _ => "Unknown"
-    };
+        return new
+        {
+            SellableItemId = saga.CorrelationId,
+            saga.ProductId,
+            saga.Sku,
+            saga.Name,
+            saga.Description,
+            saga.BasePrice,
+            saga.ItemType,
+            Payload = (IReadOnlyDictionary<string, object?>)saga.Payload,
+            saga.IsAvailable,
+            saga.Version,
+            saga.CreatedOn,
+            saga.UpdatedOn
+        };
+    }
+
+    private static Task<SendTuple<TMessage>> Message<TMessage>(BehaviorContext<SellableItemEntity> context)
+        where TMessage : class, SellableItemModel
+        => context.Init<TMessage>(CreateModelPayload(context.Saga));
 }

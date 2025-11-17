@@ -14,13 +14,13 @@ public interface ISellableItemCommandService
     /// </summary>
     /// <exception cref="SellableItemValidationException">When business rules are violated</exception>
     /// <exception cref="SellableItemConflictException">When SKU already exists</exception>
-    Task<SellableItemResponse> CreateAsync(
+    Task<SellableItemModel> CreateAsync(
         string sku,
         string name,
         string? description,
         decimal basePrice,
         string itemType,
-        Dictionary<string, object?> payload,
+        IReadOnlyDictionary<string, object?> payload,
         Guid? productId = null,
         CancellationToken cancellationToken = default);
 
@@ -29,9 +29,19 @@ public interface ISellableItemCommandService
     /// </summary>
     /// <exception cref="SellableItemNotFoundException">When sellable item doesn't exist</exception>
     /// <exception cref="SellableItemStateException">When sellable item is discontinued</exception>
-    Task<SellableItemResponse> UpdateNameAsync(
+    Task<SellableItemModel> UpdateNameAsync(
         Guid sellableItemId,
         string name,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the description for an existing sellable item.
+    /// </summary>
+    /// <exception cref="SellableItemNotFoundException">When sellable item doesn't exist</exception>
+    /// <exception cref="SellableItemStateException">When sellable item is discontinued</exception>
+    Task<SellableItemModel> UpdateDescriptionAsync(
+        Guid sellableItemId,
+        string? description,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -40,9 +50,19 @@ public interface ISellableItemCommandService
     /// <exception cref="SellableItemNotFoundException">When sellable item doesn't exist</exception>
     /// <exception cref="SellableItemValidationException">When price is invalid</exception>
     /// <exception cref="SellableItemStateException">When sellable item is discontinued</exception>
-    Task<SellableItemResponse> UpdatePriceAsync(
+    Task<SellableItemModel> UpdatePriceAsync(
         Guid sellableItemId,
         decimal basePrice,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the payload for an existing sellable item.
+    /// </summary>
+    /// <exception cref="SellableItemNotFoundException">When sellable item doesn't exist</exception>
+    /// <exception cref="SellableItemStateException">When sellable item is discontinued</exception>
+    Task<SellableItemModel> UpdatePayloadAsync(
+        Guid sellableItemId,
+        IReadOnlyDictionary<string, object?> payload,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -50,7 +70,7 @@ public interface ISellableItemCommandService
     /// </summary>
     /// <exception cref="SellableItemNotFoundException">When sellable item doesn't exist</exception>
     /// <exception cref="SellableItemStateException">When sellable item cannot be published</exception>
-    Task<SellableItemResponse> PublishAsync(
+    Task<SellableItemModel> PublishAsync(
         Guid sellableItemId,
         CancellationToken cancellationToken = default);
 
@@ -59,7 +79,7 @@ public interface ISellableItemCommandService
     /// </summary>
     /// <exception cref="SellableItemNotFoundException">When sellable item doesn't exist</exception>
     /// <exception cref="SellableItemStateException">When sellable item is discontinued</exception>
-    Task<SellableItemResponse> HideAsync(
+    Task<SellableItemModel> HideAsync(
         Guid sellableItemId,
         CancellationToken cancellationToken = default);
 
@@ -68,7 +88,7 @@ public interface ISellableItemCommandService
     /// </summary>
     /// <exception cref="SellableItemNotFoundException">When sellable item doesn't exist</exception>
     /// <exception cref="SellableItemStateException">When sellable item cannot be discontinued</exception>
-    Task<SellableItemResponse> DiscontinueAsync(
+    Task<SellableItemModel> DiscontinueAsync(
         Guid sellableItemId,
         CancellationToken cancellationToken = default);
 
@@ -77,7 +97,7 @@ public interface ISellableItemCommandService
     /// </summary>
     /// <exception cref="SellableItemNotFoundException">When sellable item doesn't exist</exception>
     /// <exception cref="SellableItemStateException">When sellable item is not discontinued</exception>
-    Task<SellableItemResponse> ReinstateAsync(
+    Task<SellableItemModel> ReinstateAsync(
         Guid sellableItemId,
         CancellationToken cancellationToken = default);
 

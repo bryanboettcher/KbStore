@@ -7,10 +7,6 @@ using KbStore.Storefront.Domains.SellableItems;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 
-/// <summary>
-/// Query service for reading SellableItem data directly from MongoDB.
-/// Provides various retrieval methods for read-only access to sellable items.
-/// </summary>
 public class SellableItemQueryService : ISellableItemQueryService
 {
     private readonly IMongoCollection<SellableItemEntity> _collection;
@@ -24,7 +20,7 @@ public class SellableItemQueryService : ISellableItemQueryService
         _logger = logger;
     }
 
-    public async Task<SellableItemResponse?> GetByIdAsync(
+    public async Task<SellableItemModel?> GetByIdAsync(
         Guid sellableItemId,
         CancellationToken cancellationToken = default)
     {
@@ -40,17 +36,17 @@ public class SellableItemQueryService : ISellableItemQueryService
             return null;
         }
 
-        return MapToResponse(entity);
+        return MapToModel(entity);
     }
 
-    public async Task<SellableItemResponse?> GetBySkuAsync(
+    public async Task<SellableItemModel?> GetBySkuAsync(
         string sku,
         CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Retrieving sellable item with SKU {SKU}", sku);
 
         var entity = await _collection
-            .Find(x => x.SKU == sku)
+            .Find(x => x.Sku == sku)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (entity == null)
@@ -59,10 +55,10 @@ public class SellableItemQueryService : ISellableItemQueryService
             return null;
         }
 
-        return MapToResponse(entity);
+        return MapToModel(entity);
     }
 
-    public async Task<List<SellableItemResponse>> GetAllAsync(
+    public async Task<List<SellableItemModel>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Retrieving all sellable items");
@@ -73,10 +69,10 @@ public class SellableItemQueryService : ISellableItemQueryService
 
         _logger.LogDebug("Retrieved {Count} sellable items", entities.Count);
 
-        return entities.Select(MapToResponse).ToList();
+        return entities.Select(MapToModel).ToList();
     }
 
-    public async Task<List<SellableItemResponse>> GetByItemTypeAsync(
+    public async Task<List<SellableItemModel>> GetByItemTypeAsync(
         string itemType,
         CancellationToken cancellationToken = default)
     {
@@ -89,10 +85,10 @@ public class SellableItemQueryService : ISellableItemQueryService
         _logger.LogDebug("Retrieved {Count} sellable items of type {ItemType}",
             entities.Count, itemType);
 
-        return entities.Select(MapToResponse).ToList();
+        return entities.Select(MapToModel).ToList();
     }
 
-    public async Task<List<SellableItemResponse>> GetPublishedAsync(
+    public async Task<List<SellableItemModel>> GetPublishedAsync(
         CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Retrieving published sellable items");
@@ -103,37 +99,40 @@ public class SellableItemQueryService : ISellableItemQueryService
 
         _logger.LogDebug("Retrieved {Count} published sellable items", entities.Count);
 
-        return entities.Select(MapToResponse).ToList();
+        return entities.Select(MapToModel).ToList();
     }
 
-    private static SellableItemResponse MapToResponse(SellableItemEntity entity)
+    private static SellableItemModel MapToModel(SellableItemEntity entity)
     {
-        return new SellableItemResponse(
-            Id: entity.CorrelationId,
-            ProductId: entity.ProductId,
-            SKU: entity.SKU,
-            Name: entity.Name,
-            Description: entity.Description,
-            BasePrice: entity.BasePrice,
-            ItemType: entity.ItemType,
-            Payload: entity.Payload,
-            State: GetStateName(entity.CurrentState),
-            IsAvailable: entity.IsAvailable,
-            Version: entity.Version,
-            CreatedAt: entity.CreatedAt,
-            UpdatedAt: entity.UpdatedAt
-        );
+        return new SellableItemModelImpl(
+            entity.CorrelationId,
+            entity.ProductId,
+            entity.Sku,
+            entity.Name,
+            entity.Description,
+            entity.BasePrice,
+            entity.ItemType,
+            entity.Payload,
+            entity.IsAvailable,
+            entity.Version,
+            entity.CreatedOn,
+            entity.UpdatedOn);
     }
 
-    private static string GetStateName(int state)
+    private sealed record SellableItemModelImpl(
+        Guid SellableItemId,
+        Guid? ProductId,
+        string Sku,
+        string Name,
+        string? Description,
+        decimal BasePrice,
+        string ItemType,
+        IReadOnlyDictionary<string, object?> Payload,
+        bool IsAvailable,
+        int Version,
+        DateTimeOffset CreatedOn,
+        DateTimeOffset UpdatedOn) : SellableItemModel
     {
-        return state switch
-        {
-            SellableItemStates.Draft => "Draft",
-            SellableItemStates.Published => "Published",
-            SellableItemStates.Hidden => "Hidden",
-            SellableItemStates.Discontinued => "Discontinued",
-            _ => "Unknown"
-        };
+        public Guid CorrelationId => SellableItemId;
     }
 }

@@ -11,21 +11,21 @@ using Shouldly;
 public class SellableItem_Publish : StateMachine_Tests<SellableItemStateMachine, SellableItemEntity>
 {
     protected IRequestClient<PublishSellableItemRequest> Client = null!;
-    protected Response<SellableItemResponse> Response = null!;
+    protected Response<PublishSellableItemResponse> Response = null!;
 
     protected override void Arrange()
     {
-
         Harness.AddOrUpdateSagaInstance<SellableItemEntity>(ExistingId, entity =>
         {
             entity.CurrentState = SellableItemStates.Draft;
-            entity.SKU = "DRAFT-SKU";
+            entity.Sku = "DRAFT-SKU";
             entity.Name = "Draft Item";
             entity.BasePrice = 50.00m;
             entity.ItemType = "simple-product";
             entity.Payload = new Dictionary<string, object?>();
             entity.IsAvailable = true;
-            entity.CreatedAt = Now;
+            entity.CreatedOn = Now;
+            entity.UpdatedOn = Now;
         });
 
         Client = Harness.Bus.CreateRequestClient<PublishSellableItemRequest>();
@@ -33,9 +33,10 @@ public class SellableItem_Publish : StateMachine_Tests<SellableItemStateMachine,
 
     protected override async Task Act()
     {
-        Response = await Client.GetResponse<SellableItemResponse>(new
+        Response = await Client.GetResponse<PublishSellableItemResponse>(new
         {
-            SellableItemId = ExistingId
+            SellableItemId = ExistingId,
+            Timestamp = DateTimeOffset.UtcNow
         });
     }
 
@@ -47,14 +48,11 @@ public class SellableItem_Publish : StateMachine_Tests<SellableItemStateMachine,
             LastException.ShouldBeNull();
 
             Response.ShouldNotBeNull();
-            Response.Message.Id.ShouldBe(ExistingId);
-            Response.Message.State.ShouldBe("Published");
-            Response.Message.UpdatedAt.ShouldNotBeNull();
+            Response.Message.SellableItemId.ShouldBe(ExistingId);
 
             var saga = SagaHarness.Sagas.Contains(ExistingId);
             saga.ShouldNotBeNull();
             saga.CurrentState.ShouldBe(SellableItemStates.Published);
-            saga.UpdatedAt.ShouldNotBeNull();
 
             (await Harness.Published.Any<SellableItemPublished>()).ShouldBeTrue();
         });
@@ -69,14 +67,14 @@ public class SellableItem_Publish : StateMachine_Tests<SellableItemStateMachine,
             Harness.AddOrUpdateSagaInstance<SellableItemEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = SellableItemStates.Hidden;
-                entity.SKU = "HIDDEN-SKU";
+                entity.Sku = "HIDDEN-SKU";
                 entity.Name = "Hidden Item";
                 entity.BasePrice = 75.00m;
                 entity.ItemType = "simple-product";
                 entity.Payload = new Dictionary<string, object?>();
                 entity.IsAvailable = true;
-                entity.CreatedAt = Now;
-                entity.UpdatedAt = Now;
+                entity.CreatedOn = Now;
+                entity.UpdatedOn = Now;
             });
         }
 
@@ -86,8 +84,7 @@ public class SellableItem_Publish : StateMachine_Tests<SellableItemStateMachine,
             LastException.ShouldBeNull();
 
             Response.ShouldNotBeNull();
-            Response.Message.Id.ShouldBe(ExistingId);
-            Response.Message.State.ShouldBe("Published");
+            Response.Message.SellableItemId.ShouldBe(ExistingId);
 
             var saga = SagaHarness.Sagas.Contains(ExistingId);
             saga.ShouldNotBeNull();
@@ -106,14 +103,14 @@ public class SellableItem_Publish : StateMachine_Tests<SellableItemStateMachine,
             Harness.AddOrUpdateSagaInstance<SellableItemEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = SellableItemStates.Discontinued;
-                entity.SKU = "DISC-SKU";
+                entity.Sku = "DISC-SKU";
                 entity.Name = "Discontinued Item";
                 entity.BasePrice = 100.00m;
                 entity.ItemType = "simple-product";
                 entity.Payload = new Dictionary<string, object?>();
                 entity.IsAvailable = false;
-                entity.CreatedAt = Now;
-                entity.UpdatedAt = Now;
+                entity.CreatedOn = Now;
+                entity.UpdatedOn = Now;
             });
         }
 

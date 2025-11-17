@@ -14,17 +14,17 @@ public class SellableItem_Delete : StateMachine_Tests<SellableItemStateMachine, 
 
     protected override void Arrange()
     {
-
         Harness.AddOrUpdateSagaInstance<SellableItemEntity>(ExistingId, entity =>
         {
             entity.CurrentState = SellableItemStates.Draft;
-            entity.SKU = "DRAFT-SKU";
+            entity.Sku = "DRAFT-SKU";
             entity.Name = "Draft Item";
             entity.BasePrice = 50.00m;
             entity.ItemType = "simple-product";
             entity.Payload = new Dictionary<string, object?>();
             entity.IsAvailable = true;
-            entity.CreatedAt = Now;
+            entity.CreatedOn = Now;
+            entity.UpdatedOn = Now;
         });
 
         Client = Harness.Bus.CreateRequestClient<DeleteSellableItemRequest>();
@@ -32,10 +32,10 @@ public class SellableItem_Delete : StateMachine_Tests<SellableItemStateMachine, 
 
     protected override async Task Act()
     {
-        // Fire and forget - delete is one-way
-        await Client.GetResponse<SellableItemDeleted>(new
+        await Client.GetResponse<DeleteSellableItemResponse>(new
         {
-            SellableItemId = ExistingId
+            SellableItemId = ExistingId,
+            Timestamp = DateTimeOffset.UtcNow
         });
     }
 
@@ -46,7 +46,6 @@ public class SellableItem_Delete : StateMachine_Tests<SellableItemStateMachine, 
         {
             LastException.ShouldBeNull();
 
-            // Saga should be finalized
             (await SagaHarness.Exists(ExistingId, machine => machine.Final)).ShouldNotBeNull();
 
             (await Harness.Published.Any<SellableItemDeleted>()).ShouldBeTrue();
@@ -62,21 +61,20 @@ public class SellableItem_Delete : StateMachine_Tests<SellableItemStateMachine, 
             Harness.AddOrUpdateSagaInstance<SellableItemEntity>(ExistingId, entity =>
             {
                 entity.CurrentState = SellableItemStates.Published;
-                entity.SKU = "PUB-SKU";
+                entity.Sku = "PUB-SKU";
                 entity.Name = "Published Item";
                 entity.BasePrice = 75.00m;
                 entity.ItemType = "simple-product";
                 entity.Payload = new Dictionary<string, object?>();
                 entity.IsAvailable = true;
-                entity.CreatedAt = Now;
+                entity.CreatedOn = Now;
+                entity.UpdatedOn = Now;
             });
         }
 
         [Test]
         public async Task It_should_not_delete() => await Assert.MultipleAsync(async () =>
         {
-            // Published items cannot be deleted - only Draft items can be deleted
-            // The state machine doesn't define a transition for Delete from Published state
             LastException.ShouldNotBeNull();
 
             var saga = SagaHarness.Sagas.Contains(ExistingId);
