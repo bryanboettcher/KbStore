@@ -101,6 +101,8 @@ public class DbContextProductQueryService : IProductQueryService
         DateTimeOffset CreatedOn,
         DateTimeOffset UpdatedOn) : ProductModel
     {
+        public Guid CorrelationId => ProductId;
+
         public bool IsEnabled
             => CurrentState switch
             {

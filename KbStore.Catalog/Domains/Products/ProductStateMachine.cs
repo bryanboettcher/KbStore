@@ -3,6 +3,7 @@
 
 namespace KbStore.Catalog.Domains.Products;
 
+using KbStore.Abstractions;
 using KbStore.Catalog.Abstractions.Contracts;
 using KbStore.Catalog.Abstractions.Exceptions;
 using MassTransit;
@@ -23,17 +24,25 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             c.ClearRequestIdOnFaulted = true;
         });
 
-        Event(() => Created, e => e.CorrelateBy((s, c) => s.Sku == c.Message.Sku).SelectId(_ => NewId.NextSequentialGuid()));
-        Event(() => StatusRequested, e => e.CorrelateById(c => c.Message.ProductId).OnMissingInstance(b => b.Execute(c => throw new ProductNotFoundException(c.Message.ProductId))));
+        Event(() => Created, e =>
+        {
+            e.CorrelateBy((saga, context) => saga.Sku == context.Message.Sku);
+            e.SelectId(context => DeterministicGuid.FromProductSku(context.Message.Sku));
+        });
+        Event(() => StatusRequested, e =>
+        {
+            e.CorrelateById(ctx => ctx.Message.ProductId);
+            e.OnMissingInstance(b => b.Execute(c => throw new ProductNotFoundException(c.Message.ProductId)));
+        });
 
-        Event(() => NameUpdated, ConfigureEvent);
-        Event(() => DimensionsUpdated, ConfigureEvent);
-        Event(() => QuantityUpdated, ConfigureEvent);
-        Event(() => StockThresholdUpdated, ConfigureEvent);
-        Event(() => LeadTimeUpdated, ConfigureEvent);
-        Event(() => EnableRequested, ConfigureEvent);
-        Event(() => DisableRequested, ConfigureEvent);
-        Event(() => Deleted, ConfigureEvent);
+        Event(() => NameUpdated);
+        Event(() => DimensionsUpdated);
+        Event(() => QuantityUpdated);
+        Event(() => StockThresholdUpdated);
+        Event(() => LeadTimeUpdated);
+        Event(() => EnableRequested);
+        Event(() => DisableRequested);
+        Event(() => Deleted);
 
         Event(() => InventoryQuantityChanged, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
         Event(() => InventoryDiscontinued, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
@@ -368,13 +377,6 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             context.Saga.CreatedOn,
             context.Saga.UpdatedOn
         });
-
-    private static void ConfigureEvent<TMessage>(IEventCorrelationConfigurator<ProductEntity, TMessage> conf)
-        where TMessage : class, ProductCommand
-    {
-        conf.CorrelateById(s => s.Message.ProductId);
-        conf.OnMissingInstance(b => b.ExecuteAsync(c => throw new ProductNotFoundException(c.Message.ProductId)));
-    }
 
     private static ProductDimensions? GetProductDimensions(ProductEntity entity)
     {

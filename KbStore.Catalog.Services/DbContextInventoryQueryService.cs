@@ -68,6 +68,8 @@ public class DbContextInventoryQueryService : IInventoryQueryService
         DateTimeOffset CreatedOn,
         DateTimeOffset UpdatedOn) : InventoryModel
     {
+        public Guid CorrelationId => InventoryId;
+
         // Translation happens in the property
         public InventoryStatus Status => CurrentState switch
         {

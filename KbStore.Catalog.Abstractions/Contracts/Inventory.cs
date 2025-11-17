@@ -1,6 +1,7 @@
 ﻿namespace KbStore.Catalog.Abstractions.Contracts;
 
 using KbStore.Abstractions;
+using MassTransit;
 
 #region Base items
 
@@ -13,13 +14,15 @@ public enum InventoryStatus
     Discontinued
 }
 
-public interface InventoryCommand
+public interface InventoryCommand : CorrelatedBy<Guid>
 {
     Guid InventoryId { get; }
     DateTimeOffset Timestamp { get; }
+
+    Guid CorrelationId => InventoryId;
 }
 
-public interface InventoryModel
+public interface InventoryModel : CorrelatedBy<Guid>
 {
     Guid InventoryId { get; }
     string PartNumber { get; }
@@ -29,6 +32,8 @@ public interface InventoryModel
 
     DateTimeOffset CreatedOn { get; }
     DateTimeOffset UpdatedOn { get; }
+
+    Guid CorrelationId => InventoryId;
 }
 
 public interface BaseInventoryEvent : InventoryModel;

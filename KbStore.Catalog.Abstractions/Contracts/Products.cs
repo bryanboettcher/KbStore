@@ -1,6 +1,7 @@
 ﻿namespace KbStore.Catalog.Abstractions.Contracts;
 
 using KbStore.Abstractions;
+using MassTransit;
 
 #region Value Types
 
@@ -27,13 +28,15 @@ public struct ProductDimensions
 
 #region Base Product Items
 
-public interface ProductCommand
+public interface ProductCommand : CorrelatedBy<Guid>
 {
     Guid ProductId { get; }
     DateTimeOffset Timestamp { get; }
+
+    Guid CorrelationId => ProductId;
 }
 
-public interface ProductModel
+public interface ProductModel : CorrelatedBy<Guid>
 {
     Guid ProductId { get; }
     string Sku { get; }
@@ -48,6 +51,8 @@ public interface ProductModel
     bool IsAvailable { get; }
     DateTimeOffset CreatedOn { get; }
     DateTimeOffset UpdatedOn { get; }
+
+    Guid CorrelationId => ProductId;
 }
 
 public interface BaseProductEvent : ProductModel;

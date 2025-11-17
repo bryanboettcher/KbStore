@@ -5,6 +5,7 @@
 
 namespace KbStore.Catalog.Domains.Inventory;
 
+using KbStore.Abstractions;
 using KbStore.Catalog.Abstractions.Contracts;
 using KbStore.Catalog.Abstractions.Exceptions;
 using MassTransit;
@@ -20,15 +21,23 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             Discontinued
         );
 
-        Event(() => Created, e => e.CorrelateBy((s, c) => s.PartNumber == c.Message.PartNumber).SelectId(_ => NewId.NextSequentialGuid()));
-        Event(() => StatusRequested, e => e.CorrelateById(c => c.Message.InventoryId).OnMissingInstance(b => b.Execute(c => throw new InventoryNotFoundException(c.Message.InventoryId))));
+        Event(() => Created, e =>
+        {
+            e.CorrelateBy((saga, context) => saga.PartNumber == context.Message.PartNumber);
+            e.SelectId(context => DeterministicGuid.FromInventoryPartNumber(context.Message.PartNumber));
+        });
+        Event(() => StatusRequested, e =>
+        {
+            e.CorrelateById(ctx => ctx.Message.InventoryId);
+            e.OnMissingInstance(b => b.Execute(c => throw new InventoryNotFoundException(c.Message.InventoryId)));
+        });
 
-        Event(() => QuantityIncreased, ConfigureEvent);
-        Event(() => QuantityDecreased, ConfigureEvent);
-        Event(() => DescriptionUpdated, ConfigureEvent);
-        Event(() => Held, ConfigureEvent);
-        Event(() => Released, ConfigureEvent);
-        Event(() => Deleted, ConfigureEvent);
+        Event(() => QuantityIncreased);
+        Event(() => QuantityDecreased);
+        Event(() => DescriptionUpdated);
+        Event(() => Held);
+        Event(() => Released);
+        Event(() => Deleted);
 
         Initially(
             When(Created)
@@ -230,10 +239,4 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             context.Saga.UpdatedOn
         });
 
-    private static void ConfigureEvent<TMessage>(IEventCorrelationConfigurator<InventoryEntity, TMessage> conf)
-        where TMessage : class, InventoryCommand
-    {
-        conf.CorrelateById(s => s.Message.InventoryId);
-        conf.OnMissingInstance(b => b.ExecuteAsync(c => throw new InventoryNotFoundException(c.Message.InventoryId)));
-    }
 }
