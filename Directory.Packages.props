@@ -12,6 +12,7 @@
     <PackageVersion Include="Hangfire" Version="1.8.21" />
     <PackageVersion Include="Hangfire.PostgreSql" Version="1.20.12" />
     <PackageVersion Include="MassTransit" Version="8.5.5" />
+    <PackageVersion Include="MassTransit.Abstractions" Version="8.5.5" />
     <PackageVersion Include="MassTransit.Analyzers" Version="8.5.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
