@@ -20,13 +20,13 @@ public sealed class SellableItemStateMachine : MassTransitStateMachine<SellableI
             e.SelectId(context => DeterministicGuid.FromSellableItemSku(context.Message.Sku));
             e.InsertOnInitial = true;
         });
-        Event(() => NameUpdated);
-        Event(() => PriceUpdated);
-        Event(() => PublishRequested);
-        Event(() => HideRequested);
-        Event(() => DiscontinueRequested);
-        Event(() => ReinstateRequested);
-        Event(() => DeleteRequested);
+        Event(() => NameUpdated, e => e.CorrelateById(ctx => ctx.Message.SellableItemId));
+        Event(() => PriceUpdated, e => e.CorrelateById(ctx => ctx.Message.SellableItemId));
+        Event(() => PublishRequested, e => e.CorrelateById(ctx => ctx.Message.SellableItemId));
+        Event(() => HideRequested, e => e.CorrelateById(ctx => ctx.Message.SellableItemId));
+        Event(() => DiscontinueRequested, e => e.CorrelateById(ctx => ctx.Message.SellableItemId));
+        Event(() => ReinstateRequested, e => e.CorrelateById(ctx => ctx.Message.SellableItemId));
+        Event(() => DeleteRequested, e => e.CorrelateById(ctx => ctx.Message.SellableItemId));
 
         Initially(
             When(Created)

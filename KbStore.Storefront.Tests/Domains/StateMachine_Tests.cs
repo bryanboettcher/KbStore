@@ -20,11 +20,14 @@ public abstract class StateMachine_Tests<TStateMachine, TSaga> : EventingTestBas
     protected override void OnHarnessCreating(IBusRegistrationConfigurator configurator)
     {
         configurator.AddSagaStateMachine<TStateMachine, TSaga>().InMemoryRepository();
+
+        base.OnHarnessCreating(configurator);
     }
 
     protected override Task OnPostSetup()
     {
         SagaHarness = Harness.GetSagaStateMachineHarness<TStateMachine, TSaga>();
-        return Task.CompletedTask;
+
+        return base.OnPostSetup();
     }
 }

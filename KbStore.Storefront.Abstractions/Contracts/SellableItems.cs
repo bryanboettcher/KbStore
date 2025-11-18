@@ -140,8 +140,10 @@ public interface SellableItemStatusResponse : SellableItemModel;
 
 public static class SellableItemStates
 {
-    public const int Draft = 1;
-    public const int Published = 2;
-    public const int Hidden = 3;
-    public const int Discontinued = 4;
+    public const int Initial = 1;
+    public const int Finalized = 2;
+    public const int Draft = 3;
+    public const int Published = 4;
+    public const int Hidden = 5;
+    public const int Discontinued = 6;
 }

@@ -28,7 +28,7 @@ public class SellableItem_Discontinue : StateMachine_Tests<SellableItemStateMach
             entity.UpdatedOn = Now;
         });
 
-        Client = Harness.Bus.CreateRequestClient<DiscontinueSellableItemRequest>();
+        Client = CreateRequestClient<DiscontinueSellableItemRequest>();
     }
 
     protected override async Task Act()

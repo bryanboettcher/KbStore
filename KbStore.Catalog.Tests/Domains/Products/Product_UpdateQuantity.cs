@@ -16,7 +16,7 @@ public class Product_UpdateQuantity : StateMachine_Tests<ProductStateMachine, Pr
 
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<UpdateProductQuantityRequest>();
+        Client = CreateRequestClient<UpdateProductQuantityRequest>();
 
         Harness.AddOrUpdateSagaInstance<ProductEntity>(ExistingId, entity =>
         {

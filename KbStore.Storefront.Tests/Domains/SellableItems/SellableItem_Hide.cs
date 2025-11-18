@@ -28,7 +28,7 @@ public class SellableItem_Hide : StateMachine_Tests<SellableItemStateMachine, Se
             entity.UpdatedOn = Now;
         });
 
-        Client = Harness.Bus.CreateRequestClient<HideSellableItemRequest>();
+        Client = CreateRequestClient<HideSellableItemRequest>();
     }
 
     protected override async Task Act()

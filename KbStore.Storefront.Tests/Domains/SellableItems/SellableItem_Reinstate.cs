@@ -28,7 +28,7 @@ public class SellableItem_Reinstate : StateMachine_Tests<SellableItemStateMachin
             entity.UpdatedOn = Now;
         });
 
-        Client = Harness.Bus.CreateRequestClient<ReinstateSellableItemRequest>();
+        Client = CreateRequestClient<ReinstateSellableItemRequest>();
     }
 
     protected override async Task Act()

@@ -15,7 +15,7 @@ public class SellableItem_Create_DuplicateSku : StateMachine_Tests<SellableItemS
 
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<CreateSellableItemRequest>();
+        Client = CreateRequestClient<CreateSellableItemRequest>();
     }
 
     protected override async Task Act()

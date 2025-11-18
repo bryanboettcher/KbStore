@@ -16,7 +16,7 @@ public class Product_Enable : StateMachine_Tests<ProductStateMachine, ProductEnt
 
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<EnableProductRequest>();
+        Client = CreateRequestClient<EnableProductRequest>();
 
         Harness.AddOrUpdateSagaInstance<ProductEntity>(ExistingId, entity =>
         {

@@ -16,7 +16,7 @@ public class Inventory_Release : StateMachine_Tests<InventoryStateMachine, Inven
 
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<ReleaseInventoryRequest>();
+        Client = CreateRequestClient<ReleaseInventoryRequest>();
     }
 
     protected override async Task Act()

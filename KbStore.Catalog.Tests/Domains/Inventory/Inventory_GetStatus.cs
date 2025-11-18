@@ -16,7 +16,7 @@ public class Inventory_GetStatus : StateMachine_Tests<InventoryStateMachine, Inv
 
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<InventoryStatusRequest>();
+        Client = CreateRequestClient<InventoryStatusRequest>();
     }
 
     protected override async Task Act()

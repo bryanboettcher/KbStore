@@ -15,7 +15,7 @@ public class SellableItem_Create : StateMachine_Tests<SellableItemStateMachine, 
 
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<CreateSellableItemRequest>();
+        Client = CreateRequestClient<CreateSellableItemRequest>();
     }
 
     protected override async Task Act()

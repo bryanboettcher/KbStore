@@ -16,7 +16,7 @@ public class Inventory_Delete : StateMachine_Tests<InventoryStateMachine, Invent
 
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<DeleteInventoryRequest>();
+        Client = CreateRequestClient<DeleteInventoryRequest>();
     }
 
     protected override async Task Act()

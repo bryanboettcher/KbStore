@@ -18,7 +18,7 @@ public class Inventory_DecreaseQuantity : StateMachine_Tests<InventoryStateMachi
     
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<DecreaseInventoryQuantityRequest>();
+        Client = CreateRequestClient<DecreaseInventoryQuantityRequest>();
         InventoryId = ExistingId;
     }
 

@@ -27,7 +27,7 @@ public class SellableItem_Delete : StateMachine_Tests<SellableItemStateMachine, 
             entity.UpdatedOn = Now;
         });
 
-        Client = Harness.Bus.CreateRequestClient<DeleteSellableItemRequest>();
+        Client = CreateRequestClient<DeleteSellableItemRequest>();
     }
 
     protected override async Task Act()
@@ -46,7 +46,7 @@ public class SellableItem_Delete : StateMachine_Tests<SellableItemStateMachine, 
         {
             LastException.ShouldBeNull();
 
-            (await SagaHarness.Exists(ExistingId, machine => machine.Final)).ShouldNotBeNull();
+            (await SagaHarness.NotExists(ExistingId)).ShouldNotBe(ExistingId);
 
             (await Harness.Published.Any<SellableItemDeleted>()).ShouldBeTrue();
         });

@@ -28,7 +28,7 @@ public class SellableItem_Publish : StateMachine_Tests<SellableItemStateMachine,
             entity.UpdatedOn = Now;
         });
 
-        Client = Harness.Bus.CreateRequestClient<PublishSellableItemRequest>();
+        Client = CreateRequestClient<PublishSellableItemRequest>();
     }
 
     protected override async Task Act()

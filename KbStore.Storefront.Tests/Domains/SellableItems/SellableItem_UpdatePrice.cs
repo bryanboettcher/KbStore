@@ -28,7 +28,7 @@ public class SellableItem_UpdatePrice : StateMachine_Tests<SellableItemStateMach
             entity.UpdatedOn = Now;
         });
 
-        Client = Harness.Bus.CreateRequestClient<UpdateSellableItemPriceRequest>();
+        Client = CreateRequestClient<UpdateSellableItemPriceRequest>();
     }
 
     protected override async Task Act()

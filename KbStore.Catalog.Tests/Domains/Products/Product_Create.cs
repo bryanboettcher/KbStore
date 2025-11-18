@@ -16,7 +16,7 @@ public class Product_Create : StateMachine_Tests<ProductStateMachine, ProductEnt
 
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<CreateProductRequest>();
+        Client = CreateRequestClient<CreateProductRequest>();
     }
 
     protected override async Task Act()

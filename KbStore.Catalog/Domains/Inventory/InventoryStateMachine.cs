@@ -32,12 +32,12 @@ public sealed class InventoryStateMachine : MassTransitStateMachine<InventoryEnt
             e.OnMissingInstance(b => b.Execute(c => throw new InventoryNotFoundException(c.Message.InventoryId)));
         });
 
-        Event(() => QuantityIncreased);
-        Event(() => QuantityDecreased);
-        Event(() => DescriptionUpdated);
-        Event(() => Held);
-        Event(() => Released);
-        Event(() => Deleted);
+        Event(() => QuantityIncreased, e => e.CorrelateById(ctx => ctx.Message.InventoryId));
+        Event(() => QuantityDecreased, e => e.CorrelateById(ctx => ctx.Message.InventoryId));
+        Event(() => DescriptionUpdated, e => e.CorrelateById(ctx => ctx.Message.InventoryId));
+        Event(() => Held, e => e.CorrelateById(ctx => ctx.Message.InventoryId));
+        Event(() => Released, e => e.CorrelateById(ctx => ctx.Message.InventoryId));
+        Event(() => Deleted, e => e.CorrelateById(ctx => ctx.Message.InventoryId));
 
         Initially(
             When(Created)

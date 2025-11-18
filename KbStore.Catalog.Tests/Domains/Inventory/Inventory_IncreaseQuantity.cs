@@ -19,7 +19,7 @@ public class Inventory_IncreaseQuantity : StateMachine_Tests<InventoryStateMachi
 
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<IncreaseInventoryQuantityRequest>();
+        Client = CreateRequestClient<IncreaseInventoryQuantityRequest>();
         InventoryId = ExistingId;
     }
 

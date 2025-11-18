@@ -16,7 +16,7 @@ public class Product_Delete : StateMachine_Tests<ProductStateMachine, ProductEnt
 
     protected override void Arrange()
     {
-        Client = Harness.Bus.CreateRequestClient<DeleteProductRequest>();
+        Client = CreateRequestClient<DeleteProductRequest>();
 
         Harness.AddOrUpdateSagaInstance<ProductEntity>(ExistingId, entity =>
         {

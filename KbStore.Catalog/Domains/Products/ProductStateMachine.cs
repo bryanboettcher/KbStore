@@ -20,7 +20,7 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
 
         Request(() => InventoryStatus, s => s.InventoryStatusId, c =>
         {
-            c.Timeout = TimeSpan.FromSeconds(0);
+            c.Timeout = TimeSpan.FromMilliseconds(500);
             c.ClearRequestIdOnFaulted = true;
         });
 
@@ -35,14 +35,14 @@ public sealed class ProductStateMachine : MassTransitStateMachine<ProductEntity>
             e.OnMissingInstance(b => b.Execute(c => throw new ProductNotFoundException(c.Message.ProductId)));
         });
 
-        Event(() => NameUpdated);
-        Event(() => DimensionsUpdated);
-        Event(() => QuantityUpdated);
-        Event(() => StockThresholdUpdated);
-        Event(() => LeadTimeUpdated);
-        Event(() => EnableRequested);
-        Event(() => DisableRequested);
-        Event(() => Deleted);
+        Event(() => NameUpdated, e => e.CorrelateById(ctx => ctx.Message.ProductId));
+        Event(() => DimensionsUpdated, e => e.CorrelateById(ctx => ctx.Message.ProductId));
+        Event(() => QuantityUpdated, e => e.CorrelateById(ctx => ctx.Message.ProductId));
+        Event(() => StockThresholdUpdated, e => e.CorrelateById(ctx => ctx.Message.ProductId));
+        Event(() => LeadTimeUpdated, e => e.CorrelateById(ctx => ctx.Message.ProductId));
+        Event(() => EnableRequested, e => e.CorrelateById(ctx => ctx.Message.ProductId));
+        Event(() => DisableRequested, e => e.CorrelateById(ctx => ctx.Message.ProductId));
+        Event(() => Deleted, e => e.CorrelateById(ctx => ctx.Message.ProductId));
 
         Event(() => InventoryQuantityChanged, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
         Event(() => InventoryDiscontinued, e => e.CorrelateBy((s, c) => s.InventoryId == c.Message.InventoryId));
